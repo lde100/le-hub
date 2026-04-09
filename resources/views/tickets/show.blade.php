@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Dein Ticket · Lucas Entertainment</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -348,6 +349,73 @@ body {
     <div class="ticket-code-bar">{{ $ticket->ticket_code }}</div>
 </div>
 
+
+<!-- LIVE REACTIONS (nur wenn Film läuft) -->
+<div id="reactions-section" style="display:none; margin-top:1.5rem; width:100%; max-width:420px;">
+    <div style="background:#141414; border:1px solid #1e1e1e; border-radius:16px; padding:1.25rem; text-align:center;">
+        <div id="film-status-label" style="font-size:.7rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.875rem;">
+            🎬 Film läuft · Reaktion senden
+        </div>
+        <div style="display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap;">
+            <button onclick="sendReaction('👏', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                👏
+            </button>
+            <button onclick="sendReaction('❤️', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                ❤️
+            </button>
+            <button onclick="sendReaction('😂', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                😂
+            </button>
+            <button onclick="sendReaction('😱', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                😱
+            </button>
+            <button onclick="sendReaction('🔥', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                🔥
+            </button>
+            <button onclick="sendReaction('⭐', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                ⭐
+            </button>
+            <button onclick="sendReaction('🍿', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                🍿
+            </button>
+            <button onclick="sendReaction('😢', this)"
+                style="font-size:2rem; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:12px; padding:.625rem; cursor:pointer; transition:transform .15s;"
+                ontouchstart="this.style.transform='scale(1.2)'" ontouchend="this.style.transform='scale(1)'"
+                onmousedown="this.style.transform='scale(1.2)'" onmouseup="this.style.transform='scale(1)'">
+                😢
+            </button>
+        </div>
+        <div id="reaction-sent" style="margin-top:.875rem; font-size:.8rem; color:#555; min-height:1.2em;"></div>
+    </div>
+</div>
+
+<div id="silence-section" style="display:none; margin-top:1rem; width:100%; max-width:420px;">
+    <div style="background:#0D0D0D; border:1px solid #1e1e1e; border-radius:12px; padding:.875rem; text-align:center; font-size:.875rem; color:#444;">
+        🤫 Film läuft — bitte Stille
+    </div>
+</div>
+
 <!-- BUTTONS -->
 <div class="action-buttons">
     <button class="btn btn-primary" onclick="saveAsPng()">
@@ -452,5 +520,57 @@ if (isIOS) {
 </style>
 @endpush
 
+
+<script>
+const screeningId = {{ $ticket->screening_id }};
+let filmState = 'countdown';
+
+// Alle 3s State pollen
+async function pollState() {
+    try {
+        const r = await fetch(`/api/screening-state/${screeningId}`);
+        const d = await r.json();
+        const newState = d?.state || 'countdown';
+        if (newState !== filmState) {
+            filmState = newState;
+            updateUI();
+        }
+    } catch(e) {}
+    setTimeout(pollState, 3000);
+}
+
+function updateUI() {
+    const reactions = document.getElementById('reactions-section');
+    const silence   = document.getElementById('silence-section');
+    if (!reactions) return;
+
+    if (filmState === 'playing') {
+        reactions.style.display = 'block';
+        silence.style.display   = 'none';
+    } else if (filmState === 'ready') {
+        reactions.style.display = 'none';
+        silence.style.display   = 'block';
+    } else {
+        reactions.style.display = 'none';
+        silence.style.display   = 'none';
+    }
+}
+
+async function sendReaction(emoji, btn) {
+    const xPct = (btn.getBoundingClientRect().left / window.innerWidth * 100).toFixed(1);
+    try {
+        await fetch(`/api/reaction/${screeningId}`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || ''},
+            body: JSON.stringify({ emoji, x_pct: parseFloat(xPct) })
+        });
+        const sent = document.getElementById('reaction-sent');
+        sent.textContent = emoji + ' gesendet!';
+        setTimeout(() => sent.textContent = '', 1500);
+    } catch(e) {}
+}
+
+pollState();
+</script>
 </body>
 </html>

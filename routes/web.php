@@ -52,6 +52,50 @@ Route::get('/api/ticker/{screeningId}', function (int $screeningId) {
     );
 })->name('api.ticker');
 
+
+// ── Overlays (vMix Luma-Key — Schwarz = transparent) ─────────────────────────
+Route::get('/overlay/countdown/{screening}', function (\App\Models\Screening $screening, \Illuminate\Http\Request $req) {
+    return view('overlays.countdown', [
+        'screening' => $screening,
+        'duration'  => (int) $req->get('duration', 5),
+    ]);
+})->name('overlay.countdown');
+
+Route::get('/overlay/curtain/{screening}', function (\App\Models\Screening $screening, \Illuminate\Http\Request $req) {
+    return view('overlays.curtain', [
+        'screening' => $screening,
+        'delay'     => (int) $req->get('delay', 500),
+        'duration'  => (int) $req->get('duration', 2000),
+    ]);
+})->name('overlay.curtain');
+
+Route::get('/overlay/reactions/{screening}', function (\App\Models\Screening $screening) {
+    return view('overlays.reactions', ['screeningId' => $screening->id]);
+})->name('overlay.reactions');
+
+// ── Reactions API ──────────────────────────────────────────────────────────────
+Route::post('/api/reaction/{screeningId}', function (int $screeningId, \Illuminate\Http\Request $req) {
+    $emoji = $req->input('emoji', '👏');
+    $xPct  = (float) $req->input('x_pct', 50);
+    // Nur erlaubte Emojis
+    $allowed = ['👏','❤️','😂','😱','🔥','⭐','🍿','😢','🎬','💫'];
+    if (!in_array($emoji, $allowed)) return response()->json(['ok' => false], 422);
+    app(\App\Services\CheckinBroadcastService::class)->addReaction($screeningId, $emoji, $xPct);
+    return response()->json(['ok' => true]);
+})->name('api.reaction');
+
+Route::get('/api/reactions/{screeningId}', function (int $screeningId, \Illuminate\Http\Request $req) {
+    $since = (int) $req->get('since', 0);
+    return response()->json(
+        app(\App\Services\CheckinBroadcastService::class)->getReactions($screeningId, $since)
+    );
+})->name('api.reactions');
+
+Route::get('/api/screening-state/{screeningId}', function (int $screeningId) {
+    $state = app(\App\Services\CheckinBroadcastService::class)->getState($screeningId);
+    return response()->json(['state' => $state]);
+})->name('api.screening-state');
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 Route::get('/login', fn() => view('auth.login'))->name('login');
 Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login.post');

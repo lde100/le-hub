@@ -96,4 +96,28 @@ class CheckinBroadcastService
     {
         return Cache::get($this->tickerKey($screeningId));
     }
+    // ── Live-Reaktionen ──────────────────────────────────────────────────────
+
+    public function addReaction(int $screeningId, string $emoji, float $xPct = 50): void
+    {
+        $key  = "reactions_{$screeningId}";
+        $list = Cache::get($key, []);
+
+        // Max 50 Reaktionen im Buffer, älteste raus
+        if (count($list) >= 50) array_shift($list);
+
+        $list[] = [
+            'emoji' => $emoji,
+            'x_pct' => $xPct,
+            'seq'   => now()->getTimestampMs(),
+        ];
+
+        Cache::put($key, $list, now()->addMinutes(10));
+    }
+
+    public function getReactions(int $screeningId, int $since = 0): array
+    {
+        $list = Cache::get("reactions_{$screeningId}", []);
+        return array_values(array_filter($list, fn($r) => $r['seq'] > $since));
+    }
 }
