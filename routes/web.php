@@ -65,3 +65,22 @@ Route::get('/cinema/entrance/{screening}', \App\Livewire\Cinema\EntranceScreen::
 // Infoscreen mit Screening-Bindung (für Check-in Overlay)
 Route::get('/screen/{channel}/{screening}', \App\Livewire\Infoscreen\Screen::class)
     ->name('screen.screening');
+
+Route::get('/ticket/{code}/label', function (string $code) {
+    $ticket = \App\Models\Ticket::with(['seat','screening.movie','booking'])
+        ->where('ticket_code', $code)->firstOrFail();
+    return view('tickets.label', compact('ticket'));
+})->name('ticket.label');
+
+Route::get('/api/ticker/{screeningId}', function (int $screeningId) {
+    $data = \Illuminate\Support\Facades\Cache::get("ticker_{$screeningId}");
+    return response()->json($data);
+})->name('api.ticker');
+
+Route::get('/cinema/post/{screening}', function (\App\Models\Screening $screening) {
+    $attendances = \App\Models\Attendance::with('seat')
+        ->where('screening_id', $screening->id)
+        ->orderBy('checked_in_at')
+        ->get();
+    return view('cinema.post-event', compact('screening', 'attendances'));
+})->name('cinema.post-event');

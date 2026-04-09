@@ -70,6 +70,11 @@
                 🎬 Beamer
             </a>
 
+            <a href="{{ route('cinema.post-event', $s->id) }}" target="_blank"
+                style="background:#1e1e1e; border:1px solid #333; border-radius:8px; color:#f5f5f5; padding:.4rem .875rem; font-size:.8rem; cursor:pointer; text-decoration:none;">
+                ⭐ Post
+            </a>
+
             <button wire:click="openForm({{ $s->id }})"
                 style="background:transparent; border:1px solid #2a2a2a; border-radius:8px; color:#666; padding:.4rem .625rem; font-size:.8rem; cursor:pointer;">
                 ✏️

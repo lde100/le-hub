@@ -126,13 +126,32 @@
             ></div>
         </div>
 
-        {{-- Countdown zurück --}}
+        {{-- "Jetzt läuft" wenn Countdown = 0 --}}
+        <template x-if="nowPlaying && !scanMode">
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#0D0D0D; z-index:5;">
+                <div style="font-size:5rem; margin-bottom:1rem;">🎬</div>
+                <div style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Jetzt läuft</div>
+                <div style="font-size:3rem; font-weight:900; text-align:center; max-width:700px; line-height:1.1;">{{ $screening->movie?->title ?? 'Vorstellung' }}</div>
+                <div style="color:#555; margin-top:1rem; font-size:.9rem;">Bitte Stille halten 🤫</div>
+            </div>
+        </template>
+
+    {{-- Countdown zurück --}}
         <div style="position:absolute; bottom:1.5rem; right:2rem; font-size:.75rem; color:#333;">
             Zurück in <span x-text="backInSeconds"></span>s
         </div>
     </div>
 
 </div>
+
+    {{-- Ticker --}}
+    <template x-if="tickerText">
+        <div style="position:fixed; bottom:0; left:0; right:0; background:#C9A84C; color:#000; font-weight:700; font-size:1.1rem; padding:.625rem 2rem; z-index:30; overflow:hidden; white-space:nowrap;">
+            <div x-text="'📢  ' + tickerText + '  ·  ' + tickerText + '  ·  ' + tickerText"
+                style="display:inline-block; animation:tickerScroll 20s linear infinite;">
+            </div>
+        </div>
+    </template>
 
 @push('scripts')
 <script>
@@ -193,11 +212,32 @@ window.entranceScreen = function(screeningId, initialSeconds, initialScan, scanM
 
         startBackTimer() {
             this.backInSeconds = Math.max(0, this.scanModeUntil - Math.floor(Date.now()/1000));
+        },
+
+        // Ticker: alle 5 Sek pollen
+        ticker: null,
+        tickerText: '',
+        async pollTicker(screeningId) {
+            try {
+                const r = await fetch(`/api/ticker/${screeningId}`);
+                const d = await r.json();
+                this.tickerText = d?.text || '';
+            } catch(e) {}
+            setTimeout(() => this.pollTicker(screeningId), 5000);
+        },
+
+        // Post-Event: wenn countdownSeconds < -300 (5 min nach Start) → "Jetzt läuft"
+        get postEvent() {
+            return this.countdownSeconds < -300;
+        },
+        get nowPlaying() {
+            return this.countdownSeconds <= 0 && this.countdownSeconds >= -300;
         }
     }
 }
 </script>
 <style>
+@keyframes tickerScroll { 0% { transform:translateX(100vw); } 100% { transform:translateX(-100%); } }
 @keyframes seatPulse {
     0%,100% { box-shadow: 0 0 15px #C9A84C55, 0 0 30px #C9A84C22; transform: scale(1); }
     50%      { box-shadow: 0 0 30px #C9A84C88, 0 0 60px #C9A84C44; transform: scale(1.05); }
