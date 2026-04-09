@@ -73,7 +73,7 @@ Route::get('/ticket/{code}/label', function (string $code) {
 })->name('ticket.label');
 
 Route::get('/api/ticker/{screeningId}', function (int $screeningId) {
-    $data = \Illuminate\Support\Facades\Cache::get("ticker_{$screeningId}");
+    $data = app(\App\Services\CheckinBroadcastService::class)->getTicker($screeningId);
     return response()->json($data);
 })->name('api.ticker');
 

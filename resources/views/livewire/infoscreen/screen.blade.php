@@ -1,9 +1,11 @@
 <div
     class="infoscreen-root"
     style="width:100vw; height:100vh; background:#0a0a0a; color:#fff; overflow:hidden; position:relative; font-family:system-ui,sans-serif;"
-    x-data="infoscreen(@js($slides), @js($lastScan))"
+    x-data="infoscreen(@js($slides), @js($lastScan), '{{ $screeningState }}')"
     x-init="start()"
     @show-welcome.window="showWelcomeOverlay($event.detail.scan)"
+    @state-changed.window="onStateChanged($event.detail.state)"
+    @play-gong.window="if(window._theaterGong) window._theaterGong.play($event.detail.count)" 
 >
 
     {{-- ── LE Header ─────────────────────────────────────────────────── --}}
@@ -116,6 +118,17 @@
         </div>
     </div>
 
+    {{-- ══ STATE OVERLAY (Gleich geht's los / Film läuft) ══════════════ --}}
+    <div
+        id="state-overlay"
+        style="position:fixed; inset:0; z-index:90; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:#0D0D0D; transition:opacity .5s;"
+    >
+        <div id="so-icon" style="font-size:5rem; margin-bottom:1.25rem;"></div>
+        <div id="so-sub" style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;"></div>
+        <div id="so-title" style="font-size:3.5rem; font-weight:900; max-width:800px; line-height:1.1;">{{ $screening?->movie?->title ?? '' }}</div>
+        <div id="so-hint" style="color:#666; margin-top:1rem; font-size:.95rem;"></div>
+    </div>
+
     {{-- ══ WELCOME OVERLAY (3 Sek bei Check-in) ════════════════════════ --}}
     <div
         id="welcome-overlay"
@@ -132,12 +145,13 @@
 
 @push('scripts')
 <script>
-window.infoscreen = function(slides, initialScan) {
+window.infoscreen = function(slides, initialScan, initialState) {
     return {
         slides,
         currentIndex: 0,
         currentSlide: slides[0] ?? null,
         clock: '',
+        screeningState: initialState || 'countdown',
         timer: null,
 
         start() {
@@ -198,6 +212,27 @@ window.infoscreen = function(slides, initialScan) {
             if (this._gongScheduled) return;
             this._gongScheduled = true;
             window.scheduleTheaterGong(startsAt, mode || 'classic');
+        },
+        onStateChanged(state) {
+            this.screeningState = state;
+            const overlay = document.getElementById('state-overlay');
+            const icon  = document.getElementById('so-icon');
+            const sub   = document.getElementById('so-sub');
+            const hint  = document.getElementById('so-hint');
+
+            if (state === 'ready') {
+                icon.textContent = '🎭';
+                sub.textContent  = 'Gleich geht's los';
+                hint.textContent = 'Bitte nehmt eure Plätze ein';
+                overlay.style.display = 'flex';
+            } else if (state === 'playing') {
+                icon.textContent = '🎬';
+                sub.textContent  = 'Jetzt läuft';
+                hint.textContent = 'Bitte Stille halten 🤫';
+                overlay.style.display = 'flex';
+            } else {
+                overlay.style.display = 'none';
+            }
         },
     }
 }

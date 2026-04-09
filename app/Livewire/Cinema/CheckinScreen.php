@@ -45,9 +45,13 @@ class CheckinScreen extends Component
     public bool $showTickerForm = false;
     public string $tickerText   = '';
 
+    // Screening-State (für Screens)
+    public string $screeningState = 'countdown'; // countdown | ready | playing
+
     public function mount(Screening $screening): void
     {
         $this->screening = $screening->load(['venue.seats', 'movie', 'tickets.seat', 'tickets.booking']);
+        $this->screeningState = app(CheckinBroadcastService::class)->getState($screening->id);
     }
 
     // ── Scan ────────────────────────────────────────────────────────────────
@@ -247,16 +251,38 @@ class CheckinScreen extends Component
 
     // ── Ticker ──────────────────────────────────────────────────────────────
 
+    // ── Screening-State Controls ────────────────────────────────────────────
+
+    public function setStateReady(): void
+    {
+        app(CheckinBroadcastService::class)->setState($this->screening->id, 'ready');
+        $this->screeningState = 'ready';
+    }
+
+    public function setStatePlaying(): void
+    {
+        app(CheckinBroadcastService::class)->setState($this->screening->id, 'playing');
+        $this->screeningState = 'playing';
+        $this->screening->update(['status' => 'open']);
+    }
+
+    public function triggerLastGong(): void
+    {
+        app(CheckinBroadcastService::class)->triggerGong($this->screening->id, 1);
+        $this->dispatch('ring-bell'); // auch lokal auf dem PC
+    }
+
+    public function resetState(): void
+    {
+        app(CheckinBroadcastService::class)->setState($this->screening->id, 'countdown');
+        $this->screeningState = 'countdown';
+    }
+
     public function sendTicker(): void
     {
         if (empty(trim($this->tickerText))) return;
 
-        \Illuminate\Support\Facades\Cache::put(
-            "ticker_{$this->screening->id}",
-            ['text' => trim($this->tickerText), 'at' => now()->toIso8601String()],
-            now()->addMinutes(30)
-        );
-
+        app(CheckinBroadcastService::class)->setTicker($this->screening->id, trim($this->tickerText));
         $this->tickerText = '';
         $this->showTickerForm = false;
         $this->dispatch('ticker-sent');
@@ -264,7 +290,7 @@ class CheckinScreen extends Component
 
     public function clearTicker(): void
     {
-        \Illuminate\Support\Facades\Cache::forget("ticker_{$this->screening->id}");
+        app(CheckinBroadcastService::class)->clearTicker($this->screening->id);
     }
 
     // ── Hilfs-Getter ────────────────────────────────────────────────────────

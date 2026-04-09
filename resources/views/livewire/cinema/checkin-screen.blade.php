@@ -41,6 +41,37 @@
         </div>
     </div>
 
+    {{-- State-Control-Bar --}}
+    <div style="padding:.625rem 1.5rem; background:#0a0a0a; border-bottom:1px solid #1e1e1e; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:.7rem; color:#444; text-transform:uppercase; letter-spacing:.1em; margin-right:.25rem;">Zustand:</span>
+
+        @if($screeningState === 'countdown')
+            <span style="font-size:.75rem; color:#555; background:#1e1e1e; padding:.3rem .75rem; border-radius:99px;">⏳ Countdown läuft</span>
+            <button wire:click="setStateReady"
+                style="background:#C9A84C22; border:1px solid #C9A84C44; border-radius:7px; color:#C9A84C; padding:.35rem .875rem; font-size:.8rem; cursor:pointer; margin-left:auto;">
+                → Gleich geht's los
+            </button>
+
+        @elseif($screeningState === 'ready')
+            <span style="font-size:.75rem; color:#C9A84C; background:#C9A84C18; padding:.3rem .75rem; border-radius:99px; font-weight:600;">✨ Gleich geht's los</span>
+            <button wire:click="triggerLastGong"
+                style="background:#1e1e1e; border:1px solid #333; border-radius:7px; color:#f5f5f5; padding:.35rem .875rem; font-size:.8rem; cursor:pointer;">
+                🔔 Letzter Gong
+            </button>
+            <button wire:click="setStatePlaying"
+                style="background:#22C55E; color:#000; font-weight:700; border:none; border-radius:7px; padding:.35rem .875rem; font-size:.8rem; cursor:pointer; margin-left:auto;">
+                ▶ Film läuft
+            </button>
+
+        @elseif($screeningState === 'playing')
+            <span style="font-size:.75rem; color:#22C55E; background:#22C55E18; padding:.3rem .75rem; border-radius:99px; font-weight:600;">🎬 Film läuft</span>
+            <button wire:click="resetState"
+                style="background:transparent; border:1px solid #2a2a2a; border-radius:7px; color:#555; padding:.35rem .75rem; font-size:.75rem; cursor:pointer; margin-left:auto;">
+                ↩ Reset
+            </button>
+        @endif
+    </div>
+
     {{-- Ticker-Form --}}
     @if($showTickerForm)
     <div style="padding:.75rem 1.5rem; background:#0D0D0D; border-bottom:1px solid #1e1e1e; display:flex; gap:.5rem;">

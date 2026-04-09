@@ -1,9 +1,11 @@
 <div
     class="entrance-root"
     style="width:100vw; height:100vh; background:#0D0D0D; color:#f5f5f5; overflow:hidden; position:relative; font-family:system-ui,sans-serif;"
-    x-data="entranceScreen({{ $screening->id }}, {{ $seconds_until_start }}, @js($currentScan), {{ $scanModeUntil }})"
+    x-data="entranceScreen({{ $screening->id }}, {{ $seconds_until_start }}, @js($currentScan), {{ $scanModeUntil }}, '{{ $screeningState }}')"
     x-init="init()"
     @new-scan.window="onNewScan($event.detail.scan)"
+    @state-changed.window="screeningState = $event.detail.state"
+    @play-gong.window="if(window._theaterGong) window._theaterGong.play($event.detail.count)" 
 >
 
     {{-- ══ MODUS A: COUNTDOWN ══════════════════════════════════════════ --}}
@@ -126,8 +128,28 @@
             ></div>
         </div>
 
-        {{-- "Jetzt läuft" wenn Countdown = 0 --}}
-        <template x-if="nowPlaying && !scanMode">
+        {{-- "Gleich geht's los" wenn State = ready --}}
+        <template x-if="screeningState === 'ready' && !scanMode">
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#0D0D0D; z-index:5;">
+                <div style="font-size:4rem; margin-bottom:1.25rem; animation:gentlePulse 2s ease-in-out infinite;">🎭</div>
+                <div style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Gleich geht's los</div>
+                <div style="font-size:3rem; font-weight:900; text-align:center; max-width:700px; line-height:1.1;">{{ $screening->movie?->title ?? 'Vorstellung' }}</div>
+                <div style="color:#666; margin-top:1rem; font-size:.95rem;">Bitte nehmt eure Plätze ein</div>
+            </div>
+        </template>
+
+        {{-- "Jetzt läuft" wenn State = playing --}}
+        <template x-if="screeningState === 'playing' && !scanMode">
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#0D0D0D; z-index:5;">
+                <div style="font-size:4rem; margin-bottom:1rem;">🎬</div>
+                <div style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Jetzt läuft</div>
+                <div style="font-size:3rem; font-weight:900; text-align:center; max-width:700px; line-height:1.1;">{{ $screening->movie?->title ?? 'Vorstellung' }}</div>
+                <div style="color:#555; margin-top:1rem; font-size:.9rem;">Bitte Stille halten 🤫</div>
+            </div>
+        </template>
+
+        {{-- "Jetzt läuft" wenn Countdown = 0 (Fallback ohne State) --}}
+        <template x-if="nowPlaying && !scanMode && screeningState === 'countdown'">
             <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#0D0D0D; z-index:5;">
                 <div style="font-size:5rem; margin-bottom:1rem;">🎬</div>
                 <div style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Jetzt läuft</div>
@@ -155,9 +177,10 @@
 
 @push('scripts')
 <script>
-window.entranceScreen = function(screeningId, initialSeconds, initialScan, scanModeUntil) {
+window.entranceScreen = function(screeningId, initialSeconds, initialScan, scanModeUntil, initialState) {
     return {
         countdownSeconds: initialSeconds,
+        screeningState: initialState || 'countdown',
         scanMode: !!initialScan,
         currentScan: initialScan,
         scanModeUntil: scanModeUntil,
@@ -237,6 +260,7 @@ window.entranceScreen = function(screeningId, initialSeconds, initialScan, scanM
 }
 </script>
 <style>
+@keyframes gentlePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.7;transform:scale(.97)} }
 @keyframes tickerScroll { 0% { transform:translateX(100vw); } 100% { transform:translateX(-100%); } }
 @keyframes seatPulse {
     0%,100% { box-shadow: 0 0 15px #C9A84C55, 0 0 30px #C9A84C22; transform: scale(1); }

@@ -12,17 +12,35 @@ class EntranceScreen extends Component
     public Screening $screening;
     public ?array $currentScan = null;
     public int $lastSeenSeq = 0;
-    public bool $scanMode = false;    // false = Countdown, true = Sitzplan-Anzeige
-    public int $scanModeUntil = 0;    // Unix-Timestamp wann zurückschalten
+    public bool $scanMode = false;
+    public int $scanModeUntil = 0;
+    public string $screeningState = 'countdown'; // countdown | ready | playing
+    public int $lastStateSeq = 0;
+    public int $lastGongSeq = 0;
 
     // Polling alle 800ms — holt neue Scans aus Cache
     #[Polling(800)]
     public function poll(): void
     {
-        $broadcast = app(CheckinBroadcastService::class);
+        $broadcast = app(\App\Services\CheckinBroadcastService::class);
 
-        if ($broadcast->isNew($this->screening->id, $this->lastSeenSeq)) {
-            $scan = $broadcast->getLatest($this->screening->id);
+        // State-Änderung
+        $stateSeq = $broadcast->getStateSeq($this->screening->id);
+        if ($stateSeq > $this->lastStateSeq) {
+            $this->screeningState = $broadcast->getState($this->screening->id);
+            $this->lastStateSeq   = $stateSeq;
+            $this->dispatch('state-changed', state: $this->screeningState);
+        }
+
+        // Gong-Trigger
+        $gong = $broadcast->getGongTrigger($this->screening->id);
+        if ($gong && $gong['seq'] > $this->lastGongSeq) {
+            $this->lastGongSeq = $gong['seq'];
+            $this->dispatch('play-gong', count: $gong['count']);
+        }
+
+        if ($broadcast->isNewScan($this->screening->id, $this->lastSeenSeq)) {
+            $scan = $broadcast->getLatestScan($this->screening->id);
             $this->currentScan   = $scan;
             $this->lastSeenSeq   = $scan['seq'];
             $this->scanMode      = true;
@@ -41,6 +59,9 @@ class EntranceScreen extends Component
     public function mount(Screening $screening): void
     {
         $this->screening = $screening->load(['venue.seats', 'movie', 'tickets']);
+        $broadcast = app(\App\Services\CheckinBroadcastService::class);
+        $this->screeningState = $broadcast->getState($screening->id);
+        $this->lastStateSeq   = $broadcast->getStateSeq($screening->id);
     }
 
     public function getSecondsUntilStartAttribute(): int

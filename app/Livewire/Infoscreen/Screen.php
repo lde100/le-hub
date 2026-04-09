@@ -21,12 +21,20 @@ class Screen extends Component
 
     // Optional: an eine Vorstellung gebunden für Check-in Overlay
     public ?int $screeningId = null;
+    public string $screeningState = 'countdown';
+    public int $lastStateSeq = 0;
+    public int $lastGongSeq  = 0;
 
     public function mount(string $channel = 'main', ?int $screeningId = null): void
     {
         $this->channel     = $channel;
         $this->screeningId = $screeningId;
         $this->loadSlides();
+        if ($this->screeningId) {
+            $broadcast = app(\App\Services\CheckinBroadcastService::class);
+            $this->screeningState = $broadcast->getState($this->screeningId);
+            $this->lastStateSeq   = $broadcast->getStateSeq($this->screeningId);
+        }
     }
 
     // Polling für Scan-Overlay (nur wenn screeningId gesetzt)
@@ -35,9 +43,25 @@ class Screen extends Component
     {
         if (!$this->screeningId) return;
 
-        $broadcast = app(CheckinBroadcastService::class);
-        if ($broadcast->isNew($this->screeningId, $this->lastSeenSeq)) {
-            $scan = $broadcast->getLatest($this->screeningId);
+        $broadcast = app(\App\Services\CheckinBroadcastService::class);
+
+        // State
+        $stateSeq = $broadcast->getStateSeq($this->screeningId);
+        if ($stateSeq > $this->lastStateSeq) {
+            $this->screeningState = $broadcast->getState($this->screeningId);
+            $this->lastStateSeq   = $stateSeq;
+            $this->dispatch('state-changed', state: $this->screeningState);
+        }
+
+        // Gong-Trigger
+        $gong = $broadcast->getGongTrigger($this->screeningId);
+        if ($gong && $gong['seq'] > $this->lastGongSeq) {
+            $this->lastGongSeq = $gong['seq'];
+            $this->dispatch('play-gong', count: $gong['count']);
+        }
+
+        if ($broadcast->isNewScan($this->screeningId, $this->lastSeenSeq)) {
+            $scan = $broadcast->getLatestScan($this->screeningId);
             $this->lastScan    = $scan;
             $this->lastSeenSeq = $scan['seq'];
             $this->dispatch('show-welcome', scan: $scan);
