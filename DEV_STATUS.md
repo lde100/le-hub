@@ -1,7 +1,97 @@
 # LE-HUB — DEV_STATUS
 
 **Stand:** 2026-04-10
-**Stack:** Laravel 11 + Livewire 4 + MariaDB 11 + Docker + Vite/Tailwind + DomPDF + Reverb
+**Stack:** Laravel 11 + Livewire 4 + MariaDB 11 + Docker + Vite/Tailwind
+**Repo:** https://github.com/lde100/le-hub
+
+---
+
+## Schnellstart
+
+```bash
+git clone https://github.com/lde100/le-hub.git && cd le-hub
+cp .env.example .env
+# APP_URL=http://192.168.1.xxx:8080  ← Heimnetz-IP setzen
+docker compose up -d --build
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate --seed
+# Passwort setzen:
+docker compose exec app php artisan tinker
+>>> \App\Models\User::first()->update(['password' => bcrypt('dein-passwort')])
+```
+
+Login: `http://IP:8080` → `admin@le-hub.local`
+Vollständige Anleitung: **SETUP.md**
+
+---
+
+## Was funktioniert (testbereit)
+
+### 🎟 Event-Workflow (komplett)
+```
+/events → Event anlegen
+  ↓ Termin-Abstimmung (mehrere Optionen)
+  ↓ öffentlicher Link → WhatsApp → Gäste stimmen ab
+  ↓ Admin bestätigt Termin
+  ↓ Film-Abstimmung (Likes + Wünsche)
+  ↓ Admin bestätigt Film → Screening angelegt
+  ↓ Gäste: Sitzplatz anfragen
+  ↓ Admin: bestätigen → Ticket generiert
+  ↓ Ticket-Link per WhatsApp
+```
+
+### 🎛 Event-Hub (`/events/{id}/hub`)
+- Alle Links an einem Ort — kein URL eintippen
+- Einladungs-Link + WhatsApp-Button
+- Screen-URLs + QR-Codes (Handy draufhalten → öffnet sich)
+- Overlay-URLs + QR-Codes für vMix
+- Ticket-Links für jeden Gast mit WhatsApp-Button
+
+### 🎬 Abend-Betrieb
+| Screen | URL |
+|--------|-----|
+| Beamer (Infoscreen) | `/screen/main/{id}?autoplay=1` |
+| Screen 2 (Einlass) | `/cinema/entrance/{id}?autoplay=1` |
+| Scanner-PC | `/cinema/checkin/{id}` |
+| Post-Event | `/cinema/post/{id}` |
+
+**State-Control am Scanner-PC:**
+`⏳ Countdown` → `✨ Gleich geht's los` → `🔔 Letzter Gong` → `▶ Film läuft`
+
+### 🎭 vMix Overlays (Luma-Key: Schwarz = transparent)
+| Overlay | URL |
+|---------|-----|
+| 5-4-3-2-1 Countdown | `/overlay/countdown/{id}?duration=5` |
+| Vorhang öffnet sich | `/overlay/curtain/{id}` |
+| Live-Reaktionen | `/overlay/reactions/{id}` |
+
+### 🔊 Audio
+- **Theater-Gong** (Web Audio): 3× bei 15min, 2× bei 5min, 1× manuell
+- **Einlass-Chime** (togglebar 🔔): Erfolg/Warnung/Fehler
+- Testbar aus Browser-Konsole: `window._theaterGong.play(3)` / `window._checkinChime.play()`
+
+### 🎟 Ticket-Seite (`/ticket/{code}`)
+- Retro-Kinokarte mit Saalplan-SVG + QR
+- PNG speichern (html2canvas, 3×) → Fotos-App
+- PDF drucken
+- WhatsApp teilen
+- Brother 62mm Label: `/ticket/{code}/label`
+- Live-Reaktions-Buttons (erscheinen automatisch wenn Film läuft)
+
+### 📟 Checkin-Screen (Admin)
+- Barcode/QR scannen (HID) + manueller Check-in
+- Abendkasse: Walk-in Ticket sofort erstellen
+- Ticket bearbeiten: Name, Platz, Status, Storno
+- Sitzplatz spontan hinzufügen
+- Film/Zeit spontan ändern
+- Ticker auf alle Screens senden (Laufschrift)
+- State-Steuerung: Countdown → Ready → Playing
+
+### 📺 Screens
+- **Infoscreen** (`/screen`): Slides, Countdown, Menü, PayPal-QR
+- **Entrance-Screen**: Countdown + animierter Sitzplan bei Scan
+  - Automatisch: `countdown` → `ready` → `playing` je nach State
+- **Post-Event**: Danke + Anwesenheitsliste
 
 ---
 
@@ -11,141 +101,68 @@
 le-hub/
 ├── app/
 │   ├── Livewire/
-│   │   ├── Cinema/     SeatMap, TicketScanner, CheckinScreen
-│   │   ├── Event/      PublicEventPage
-│   │   └── Infoscreen/ Screen
-│   ├── Models/         (siehe unten)
+│   │   ├── Admin/        Dashboard, EventIndex, EventDetail, EventHub, CinemaIndex
+│   │   ├── Cinema/       SeatMap, TicketScanner, CheckinScreen, EntranceScreen
+│   │   ├── Event/        PublicEventPage
+│   │   └── Infoscreen/   Screen
+│   ├── Models/           (18 Models)
 │   └── Services/
-│       ├── TicketPdfService      Retro-PDF, SVG-Saalplan
-│       └── AppleWalletService    PKPass (braucht Apple Dev Cert)
-├── config/wallet.php
+│       ├── CheckinBroadcastService   State, Scan, Gong, Ticker, Reaktionen
+│       ├── TicketPdfService          Retro-PDF + SVG-Saalplan
+│       └── AppleWalletService        (Platzhalter, braucht Apple Dev Cert)
+├── public/js/
+│   ├── audio/
+│   │   ├── TheaterGong.js    Gong-Synthesizer (Web Audio)
+│   │   └── CheckinChime.js   Einlass-Chime (Web Audio)
+│   └── barcode/
+│       └── BarcodeListener.js  HID-Scanner Handler
 ├── resources/views/
-│   ├── layouts/
-│   │   ├── public.blade.php      Mobile LE-Branding
-│   │   ├── infoscreen.blade.php  Kiosk-Mode
-│   │   └── checkin.blade.php     Einlass-Screen + Web Audio
-│   ├── tickets/pdf.blade.php     Retro-Kinokarte (DIN A5 quer)
-│   └── livewire/
-│       ├── cinema/    seat-map, ticket-scanner, checkin-screen
-│       ├── event/     public-page
-│       └── infoscreen/screen
-└── routes/web.php
+│   ├── layouts/     app, public, infoscreen, checkin
+│   ├── overlays/    base, countdown, curtain, reactions
+│   ├── tickets/     show, pdf, label
+│   ├── cinema/      post-event
+│   └── livewire/    (alle Komponenten)
+├── docker-compose.yml   (inkl. Cloudflare-Tunnel-Profile)
+├── SETUP.md
+└── .env.example
 ```
 
 ---
 
-## Ticket-Flow (vollständig geplant, teilweise gebaut)
+## DB-Schema (18 Tabellen)
 
-```
-Event erstellen (Admin)
-  ↓
-Termin-Abstimmung → Film-Voting → Sitzplatz-Anfrage
-  ↓ Admin bestätigt Sitze
-Ticket generieren → ticket_code = LExxxxxxxxxx
-  ↓
-Gast bekommt:
-  ├── PDF-Link:    /ticket/{code}/pdf     → Retro-Kinokarte (druckbar)
-  └── Wallet-Link: /ticket/{code}/wallet  → Apple Wallet .pkpass
+**Core:** customers, products, product_categories, orders, order_participants,
+order_items, order_item_splits, invoices, payments, infoscreen_slides
 
-Einlass-Screen: /cinema/checkin/{screening}
-  ├── Barcode/QR scannen → Livewire handleScan()
-  ├── Welcome-Overlay (4 Sek, animiert, Name + Platz)
-  ├── Sitzplan live aktualisiert (grün = eingecheckt, gold = gerade gescannt)
-  ├── Theater-Glocke (Web Audio API, A5-Akkord)
-  └── Fortschritts-Bar + "Alle da — Film kann starten!" wenn 100%
-```
+**Cinema:** venues, seats, movies, screenings, bookings, tickets
+
+**Events:** events, event_slots, event_polls, poll_options, poll_votes,
+seat_requests, attendances
+
+**Guests:** guests, loyalty_transactions
+
+**System:** users, sessions, cache, jobs
 
 ---
 
-## Modul-Status
+## Nächste Schritte (nach Testlauf)
 
-### 🎬 Cinema + Einlass
-- [x] DB, Models, Seeder
-- [x] SeatMap Livewire
-- [x] TicketScanner (HID + iPhone Kamera)
-- [x] **CheckinScreen** — Saalplan live, Welcome-Overlay, Theater-Glocke, Fortschritt
-- [x] **Ticket-PDF** — Retro-Kinokarte DIN A5 quer, SVG-Saalplan mit Sitz-Markierung
-- [x] **Apple Wallet** — vollständig implementiert, braucht Apple Dev Zertifikat
-- [ ] Buchungsflow: Admin Screening anlegen → Tickets generieren
-- [ ] Ticket-Link per E-Mail an Gäste schicken
-
-### 🎟️ Event / Voting
-- [x] Komplettes DB-Schema + Models
-- [x] PublicEventPage (Abstimmung, Film-Voting, Sitzplatz-Anfrage)
-- [ ] Admin: Event anlegen, Polls steuern, Anfragen bestätigen
-
-### 📺 Infoscreen
-- [x] Screen-Komponente, multi-channel
-- [ ] "Jetzt auf Platz"-Overlay bei Einlass (braucht Reverb/Broadcasting)
-- [ ] Countdown "Film beginnt in X Minuten"
-- [ ] Post-Event Memory-Seite
-
-### 🛒 Gastro / POS
-- [x] DB + Models vollständig
-- [ ] Livewire UI
-
-### 🔒 Auth
-- [ ] Login-Controller + App-Shell
+- [ ] Testen + Bugs fixen
+- [ ] Film-Bewertung nach dem Film (1-5 Sterne, Ergebnis auf Post-Event-Screen)
+- [ ] Film-Tagebuch (`/archive`) — alle Abende mit Poster + Wer war dabei
+- [ ] Gastro/POS — Bestellaufnahme, Tab, Bill-Split
+- [ ] Weitere vMix-Overlays: "Handys aus", Intermission-Timer
+- [ ] TMDB-Integration für Filmsuche mit Poster
+- [ ] Emby-Integration (Platzhalter ready)
+- [ ] Loyalitätspunkte aktivieren
+- [ ] IT-Service Modul
 
 ---
 
-## Apple Wallet Setup (einmalig)
+## Bekannte Offene Punkte
 
-1. Apple Developer Account aktiv?
-2. Neuen Pass Type Identifier anlegen: `pass.de.lucas-entertainment.ticket`
-3. Zertifikat exportieren als `.p12`, dann:
-   ```bash
-   openssl pkcs12 -in cert.p12 -clcerts -nokeys -out storage/app/wallet/pass.crt
-   openssl pkcs12 -in cert.p12 -nocerts -nodes -out storage/app/wallet/pass.key
-   ```
-4. WWDR G4 von Apple laden → `storage/app/wallet/AppleWWDRCA.pem`
-5. In `.env` eintragen
-
-## Docker-Start
-
-```bash
-cp .env.example .env
-docker compose run --rm app php artisan key:generate
-docker compose up -d
-docker compose exec app php artisan migrate
-docker compose exec app php artisan db:seed --class=HomecinemaSeeder
-docker compose exec app php artisan db:seed --class=CoreSeeder
-```
-
----
-
-## Routen
-
-| URL                          | Auth | Beschreibung                       |
-|------------------------------|------|------------------------------------|
-| /event/{token}               | Nein | Event-Seite (WhatsApp-Link)        |
-| /screen, /screen/{channel}   | Nein | Infoscreen                         |
-| /ticket/{code}/pdf           | Nein | Ticket-PDF Download                |
-| /ticket/{code}/wallet        | Nein | Apple Wallet .pkpass               |
-| /cinema/checkin/{screening}  | Ja   | Einlass-Screen mit Saalplan        |
-
-## Design
-Farben: #0D0D0D (Hintergrund) · #C9A84C (Gold/Akzent) · #F5F5F5 (Text)
-Font: System-UI + Courier (Retro-Ticket)
-
----
-
-## Event-Hub (/events/{id}/hub)
-
-Zentrale Schaltzentrale pro Event — kein URL eintippen:
-- Einladungs-Link + 📱 WhatsApp-Button + QR
-- Alle Screen-URLs mit QR-Code (Handy draufhalten → öffnet sich)
-- Ticket-Links für jeden Gast mit WhatsApp-Button
-- Cloudflare-Hinweis wenn APP_URL noch nicht HTTPS
-
-QR-Codes funktionieren nur wenn APP_URL auf die externe/Heimnetz-IP zeigt.
-
-## Deployment
-
-```
-lokal:   docker compose up -d
-extern:  docker compose --profile tunnel up -d
-```
-
-Cloudflare-Tunnel läuft als eigenes Profil — nur aktivieren wenn gebraucht.
-Vollständige Anleitung: SETUP.md
+- `gastro.index`, `gastro.orders`, `gastro.menu`, `customers.index`, `infoscreen.admin`
+  → Routes vorhanden, Views noch nicht gebaut (Platzhalter)
+- Apple Wallet: braucht Apple Developer Zertifikat
+- TMDB/Emby: `.env` Keys eintragen wenn ready
+- Migration-Konflikt: Laravel-Standard `users`-Migration + eigene — prüfen beim ersten `migrate`
