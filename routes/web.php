@@ -36,3 +36,6 @@ Route::middleware('auth')->group(function () {
     // Infoscreen Admin
     Route::get('/infoscreen', fn() => view('infoscreen.admin'))->name('infoscreen.admin');
 });
+
+// ── Öffentliche Event-Seite (WhatsApp-Link) ───────────────────────────────────
+Route::get('/event/{token}', \App\Livewire\Event\PublicEventPage::class)->name('event.public');
