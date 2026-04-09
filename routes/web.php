@@ -39,3 +39,28 @@ Route::middleware('auth')->group(function () {
 
 // ── Öffentliche Event-Seite (WhatsApp-Link) ───────────────────────────────────
 Route::get('/event/{token}', \App\Livewire\Event\PublicEventPage::class)->name('event.public');
+
+// ── Ticket Download ────────────────────────────────────────────────────────────
+Route::get('/ticket/{code}/pdf', function (string $code) {
+    $ticket = \App\Models\Ticket::where('ticket_code', $code)->firstOrFail();
+    $pdf = app(\App\Services\TicketPdfService::class)->generate($ticket);
+    return $pdf->download('ticket-' . $code . '.pdf');
+})->name('ticket.pdf');
+
+Route::get('/ticket/{code}/wallet', function (string $code) {
+    $ticket = \App\Models\Ticket::where('ticket_code', $code)->firstOrFail();
+    $service = app(\App\Services\AppleWalletService::class);
+    if (!$service->isConfigured()) {
+        return response()->json(['error' => 'Apple Wallet nicht konfiguriert'], 503);
+    }
+    $pkpass = $service->generate($ticket);
+    return response($pkpass, 200, [
+        'Content-Type'        => 'application/vnd.apple.pkpass',
+        'Content-Disposition' => 'attachment; filename="ticket.pkpass"',
+    ]);
+})->name('ticket.wallet');
+
+// ── Check-in Screen (Admin) ────────────────────────────────────────────────────
+Route::get('/cinema/checkin/{screening}', \App\Livewire\Cinema\CheckinScreen::class)
+    ->middleware('auth')
+    ->name('cinema.checkin');
