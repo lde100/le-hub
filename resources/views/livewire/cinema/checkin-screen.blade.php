@@ -2,6 +2,7 @@
     style="display:grid; grid-template-columns:1fr 340px; height:100dvh; gap:0; font-family:system-ui,sans-serif;"
     x-data="checkinApp()"
     @handle-scan.window="$wire.handleScan($event.detail.code)"
+    @scan-result.window="playChime($event.detail.status)"
     @ticket-created.window="onTicketCreated($event.detail)"
 >
 
@@ -34,6 +35,12 @@
             <button wire:click="$toggle('showTickerForm')" title="Ticker senden"
                 style="background:#1e1e1e; border:1px solid #2a2a2a; border-radius:7px; color:#888; padding:.375rem .75rem; font-size:.8rem; cursor:pointer;">
                 📢
+            </button>
+            <button @click="toggleChime()" :title="chimeEnabled ? 'Chime an — klicken zum Ausschalten' : 'Chime aus — klicken zum Einschalten'"
+                :style="chimeEnabled
+                    ? 'background:#C9A84C22; border:1px solid #C9A84C44; border-radius:7px; color:#C9A84C; padding:.375rem .625rem; font-size:.85rem; cursor:pointer;'
+                    : 'background:#1e1e1e; border:1px solid #2a2a2a; border-radius:7px; color:#333; padding:.375rem .625rem; font-size:.85rem; cursor:pointer; text-decoration:line-through;'">
+                🔔
             </button>
             <div style="font-size:1.25rem; font-weight:900; color:{{ $all_done ? '#22C55E' : '#C9A84C' }}; min-width:50px; text-align:right;">
                 {{ $checked_in_count }}<span style="font-size:.75rem; color:#444;">/{{ $total_tickets }}</span>
@@ -366,10 +373,21 @@
 window.checkinApp = function() {
     return {
         showWelcome: @entangle('showWelcome'),
+        chimeEnabled: localStorage.getItem('le_chime_enabled') !== 'false',
+
         init() {
             import('/js/barcode/BarcodeListener.js').then(({ default: BL }) => {
                 new BL(code => Livewire.dispatch('handle-scan', { code }), { captureInput: false });
             });
+        },
+
+        playChime(type) {
+            if (window.playCheckinChime) window.playCheckinChime(type || 'success');
+        },
+
+        toggleChime() {
+            this.chimeEnabled = !this.chimeEnabled;
+            if (window.setChimeEnabled) window.setChimeEnabled(this.chimeEnabled);
         },
     }
 }

@@ -51,5 +51,24 @@
         }
     }
     </script>
+
+    <script type="module">
+    import CheckinChime from '/js/audio/CheckinChime.js';
+    const chime = new CheckinChime();
+    window._checkinChime = chime;
+
+    let chimeEnabled = localStorage.getItem('le_chime_enabled') !== 'false';
+    window.isChimeEnabled = () => chimeEnabled;
+    window.setChimeEnabled = (val) => {
+        chimeEnabled = val;
+        localStorage.setItem('le_chime_enabled', val ? 'true' : 'false');
+    };
+    window.playCheckinChime = function(type) {
+        if (!chimeEnabled) return;
+        if (type === 'success') chime.play();
+        else if (type === 'warning') chime.playWarning();
+        else if (type === 'error') chime.playError();
+    };
+    </script>
 </body>
 </html>
