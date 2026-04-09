@@ -21,7 +21,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
 
     // Cinema
-    Route::get('/cinema', fn() => view('cinema.index'))->name('cinema.index');
+    Route::get('/cinema', \App\Livewire\Admin\CinemaIndex::class)->name('cinema.index');
     Route::get('/cinema/screenings', fn() => view('cinema.screenings'))->name('cinema.screenings');
     Route::get('/cinema/scan', \App\Livewire\Cinema\TicketScanner::class)->name('cinema.scan');
 

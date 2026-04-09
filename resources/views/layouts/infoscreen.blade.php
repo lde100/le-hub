@@ -36,6 +36,14 @@
         gong.play(1);
     };
 
+    // vMix / Autoplay: ?autoplay=1 in URL → AudioContext sofort resumed
+    if (new URLSearchParams(location.search).get('autoplay') === '1') {
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            ctx.resume().then(() => console.log('🔊 AudioContext resumed (autoplay mode)'));
+            window._autoAudioCtx = ctx;
+        });
+    }
     // Für schnelles Testen aus der Browser-Konsole:
     // window._theaterGong.play(3)
     </script>
