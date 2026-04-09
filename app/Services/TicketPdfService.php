@@ -34,6 +34,11 @@ class TicketPdfService
      * Saalplan-SVG mit markiertem Sitz.
      * Koordinaten basieren auf dem Heimkino-Layout.
      */
+    public function buildSeatMapSvgPublic(Venue $venue, ?int $highlightSeatId): string
+    {
+        return $this->buildSeatMapSvg($venue, $highlightSeatId ?? 0);
+    }
+
     private function buildSeatMapSvg(Venue $venue, int $highlightSeatId): string
     {
         $seats = $venue->seats()->where('is_active', true)->get();

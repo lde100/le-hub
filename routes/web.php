@@ -48,16 +48,9 @@ Route::get('/ticket/{code}/pdf', function (string $code) {
 })->name('ticket.pdf');
 
 Route::get('/ticket/{code}/wallet', function (string $code) {
-    $ticket = \App\Models\Ticket::where('ticket_code', $code)->firstOrFail();
-    $service = app(\App\Services\AppleWalletService::class);
-    if (!$service->isConfigured()) {
-        return response()->json(['error' => 'Apple Wallet nicht konfiguriert'], 503);
-    }
-    $pkpass = $service->generate($ticket);
-    return response($pkpass, 200, [
-        'Content-Type'        => 'application/vnd.apple.pkpass',
-        'Content-Disposition' => 'attachment; filename="ticket.pkpass"',
-    ]);
+    // Apple Wallet entfernt (kein Developer Account)
+    // PNG-Ticket: /ticket/{code}
+    return redirect()->route('ticket.show', $code);
 })->name('ticket.wallet');
 
 // ── Check-in Screen (Admin) ────────────────────────────────────────────────────
