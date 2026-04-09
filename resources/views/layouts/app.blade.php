@@ -59,6 +59,11 @@ body { background:var(--dark); color:var(--text); font-family:system-ui,-apple-s
             <span class="nav-icon">⚡</span> Dashboard
         </a>
 
+        <div class="nav-section">Events</div>
+        <a href="{{ route('admin.events') }}" class="nav-item {{ request()->routeIs('admin.events*') ? 'active' : '' }}">
+            <span class="nav-icon">🎟</span> Events & Voting
+        </a>
+
         <div class="nav-section">Kino</div>
         <a href="{{ route('cinema.index') }}" class="nav-item {{ request()->routeIs('cinema.*') ? 'active' : '' }}">
             <span class="nav-icon">🎬</span> Vorstellungen
