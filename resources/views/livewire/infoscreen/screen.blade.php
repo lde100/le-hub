@@ -1,36 +1,39 @@
 <div
-    class="infoscreen-root w-screen h-screen flex flex-col bg-black text-white overflow-hidden"
-    x-data="infoscreen(@js($slides))"
+    class="infoscreen-root"
+    style="width:100vw; height:100vh; background:#0a0a0a; color:#fff; overflow:hidden; position:relative; font-family:system-ui,sans-serif;"
+    x-data="infoscreen(@js($slides), @js($lastScan))"
     x-init="start()"
+    @show-welcome.window="showWelcomeOverlay($event.detail.scan)"
 >
-    {{-- LE Branding Header --}}
-    <div class="infoscreen-header flex items-center justify-between px-8 py-4 border-b border-white/10">
-        <div class="le-logo flex items-center gap-3">
-            <span class="text-3xl font-black tracking-tight text-white">LE</span>
-            <div class="flex flex-col leading-none">
-                <span class="text-xs font-semibold text-white/60 uppercase tracking-widest">Lucas</span>
-                <span class="text-xs font-semibold text-white/60 uppercase tracking-widest">Entertainment</span>
+
+    {{-- ── LE Header ─────────────────────────────────────────────────── --}}
+    <div style="position:absolute; top:0; left:0; right:0; padding:1.25rem 2rem; display:flex; justify-content:space-between; align-items:center; z-index:10; background:linear-gradient(to bottom,#000a,transparent);">
+        <div style="display:flex; align-items:center; gap:.75rem;">
+            <div style="width:34px;height:34px;background:#C9A84C;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:13px;letter-spacing:-.5px;">LE</div>
+            <div>
+                <div style="font-size:.95rem; font-weight:700;">Lucas Entertainment</div>
+                <div style="font-size:.65rem; color:#666; letter-spacing:.12em; text-transform:uppercase;">Private Cinema</div>
             </div>
         </div>
-        <div class="text-white/40 text-sm" x-text="currentTime"></div>
+        <div style="font-size:1.1rem; font-weight:300; color:#888; font-variant-numeric:tabular-nums;" x-text="clock"></div>
     </div>
 
-    {{-- Slide Content --}}
-    <div class="infoscreen-content flex-1 relative overflow-hidden">
+    {{-- ── Slide Content ─────────────────────────────────────────────── --}}
+    <div style="position:absolute; inset:0;">
 
         {{-- now_playing --}}
         <template x-if="currentSlide?.type === 'now_playing'">
-            <div class="slide-now-playing absolute inset-0 flex items-center justify-center p-12">
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:5rem 4rem 3rem;">
                 <template x-if="currentSlide.data?.empty">
-                    <div class="text-center text-white/30 text-2xl">Keine laufende Vorstellung</div>
+                    <div style="color:#333; font-size:1.5rem;">Keine laufende Vorstellung</div>
                 </template>
                 <template x-if="!currentSlide.data?.empty">
-                    <div class="flex gap-12 items-center">
-                        <div class="text-8xl">🎬</div>
+                    <div style="display:flex; gap:3rem; align-items:center; max-width:900px;">
+                        <div style="font-size:5rem; flex-shrink:0;">🎬</div>
                         <div>
-                            <div class="text-white/50 text-sm uppercase tracking-widest mb-2">Jetzt läuft</div>
-                            <div class="text-5xl font-bold mb-4" x-text="currentSlide.data.title"></div>
-                            <div class="flex gap-6 text-white/60 text-lg">
+                            <div style="font-size:.75rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Jetzt läuft</div>
+                            <div style="font-size:3.5rem; font-weight:900; line-height:1.1; margin-bottom:1rem;" x-text="currentSlide.data.title"></div>
+                            <div style="display:flex; gap:1.5rem; color:#666; font-size:1rem;">
                                 <span x-text="'⏱ ' + currentSlide.data.duration"></span>
                                 <span x-text="currentSlide.data.rating"></span>
                                 <span x-text="'Seit ' + currentSlide.data.started + ' Uhr'"></span>
@@ -43,32 +46,46 @@
 
         {{-- upcoming --}}
         <template x-if="currentSlide?.type === 'upcoming'">
-            <div class="slide-upcoming absolute inset-0 flex flex-col justify-center p-12">
-                <div class="text-white/50 text-sm uppercase tracking-widest mb-8">Demnächst</div>
-                <div class="flex gap-8">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:5rem 4rem 3rem;">
+                <div style="font-size:.75rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1.5rem;">Demnächst</div>
+                <div style="display:flex; gap:1.5rem;">
                     <template x-for="item in currentSlide.data" :key="item.title">
-                        <div class="flex-1 border border-white/10 rounded-2xl p-6">
-                            <div class="text-4xl mb-3">🎥</div>
-                            <div class="text-xl font-bold mb-2" x-text="item.title"></div>
-                            <div class="text-white/50" x-text="item.date + ' · ' + item.time + ' Uhr'"></div>
+                        <div style="flex:1; border:1px solid #1e1e1e; border-radius:16px; padding:1.5rem;">
+                            <div style="font-size:2.5rem; margin-bottom:.75rem;">🎥</div>
+                            <div style="font-size:1.25rem; font-weight:700; margin-bottom:.5rem;" x-text="item.title"></div>
+                            <div style="color:#666; font-size:.9rem;" x-text="item.date + ' · ' + item.time + ' Uhr'"></div>
                         </div>
                     </template>
                 </div>
             </div>
         </template>
 
+        {{-- countdown --}}
+        <template x-if="currentSlide?.type === 'countdown'">
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 4rem 3rem; text-align:center;">
+                <template x-if="!currentSlide.data?.empty">
+                    <div>
+                        <div style="font-size:.75rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:1rem;">Film beginnt in</div>
+                        <div style="font-size:6rem; font-weight:900; letter-spacing:.05em; font-variant-numeric:tabular-nums; margin-bottom:1.5rem;" x-text="getCountdownText(currentSlide.data.starts_at)"></div>
+                        <div style="font-size:2rem; font-weight:700; margin-bottom:.5rem;" x-text="currentSlide.data.title"></div>
+                        <div style="color:#666; font-size:1rem;" x-text="currentSlide.data.date_label + ' · ' + currentSlide.data.time_label + ' Uhr'"></div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
         {{-- menu_category --}}
         <template x-if="currentSlide?.type === 'menu_category'">
-            <div class="slide-menu absolute inset-0 flex flex-col justify-center p-12">
-                <div class="flex items-center gap-4 mb-8">
-                    <span class="text-5xl" x-text="currentSlide.data.icon"></span>
-                    <span class="text-4xl font-bold" x-text="currentSlide.data.name"></span>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:5rem 4rem 3rem;">
+                <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+                    <span style="font-size:3rem;" x-text="currentSlide.data.icon"></span>
+                    <span style="font-size:2.5rem; font-weight:700;" x-text="currentSlide.data.name"></span>
                 </div>
-                <div class="grid grid-cols-3 gap-4">
-                    <template x-for="product in currentSlide.data.products" :key="product.name">
-                        <div class="border border-white/10 rounded-xl p-4 flex justify-between items-center">
-                            <span class="text-lg" x-text="product.name"></span>
-                            <span class="text-white/60 text-sm" x-text="product.price || 'inklusive'"></span>
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem;">
+                    <template x-for="p in currentSlide.data.products" :key="p.name">
+                        <div style="border:1px solid #1e1e1e; border-radius:12px; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:1rem;" x-text="p.name"></span>
+                            <span style="color:#666; font-size:.85rem;" x-text="p.price || 'inkl.'"></span>
                         </div>
                     </template>
                 </div>
@@ -77,68 +94,102 @@
 
         {{-- paypal_qr --}}
         <template x-if="currentSlide?.type === 'paypal_qr'">
-            <div class="slide-paypal absolute inset-0 flex flex-col items-center justify-center gap-8">
-                <div class="text-white/50 text-sm uppercase tracking-widest">Bezahlen via PayPal</div>
-                <div class="bg-white p-4 rounded-2xl">
-                    <img
-                        :src="'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent('https://paypal.me/' + currentSlide.data.paypal_me)"
-                        width="280" height="280" alt="PayPal QR"
-                    >
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;">
+                <div style="font-size:.75rem; color:#666; letter-spacing:.2em; text-transform:uppercase;">Bezahlen via PayPal</div>
+                <div style="background:#fff; padding:12px; border-radius:16px;">
+                    <img :src="'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' + encodeURIComponent('https://paypal.me/' + currentSlide.data.paypal_me)" width="280" height="280">
                 </div>
-                <div class="text-xl font-semibold" x-text="'paypal.me/' + currentSlide.data.paypal_me"></div>
+                <div style="font-size:1.25rem; font-weight:600;" x-text="'paypal.me/' + currentSlide.data.paypal_me"></div>
             </div>
         </template>
 
     </div>
 
-    {{-- Slide Progress Bar --}}
-    <div class="infoscreen-footer px-8 py-3">
-        <div class="flex gap-2 items-center">
+    {{-- ── Progress Bar ──────────────────────────────────────────────── --}}
+    <div style="position:absolute; bottom:0; left:0; right:0; padding:.75rem 2rem;">
+        <div style="display:flex; gap:.375rem;">
             <template x-for="(slide, i) in slides" :key="i">
-                <div
-                    class="h-1 rounded-full transition-all duration-300"
-                    :class="i === currentIndex ? 'bg-white flex-1' : 'bg-white/20 w-6'"
-                ></div>
+                <div style="height:3px; border-radius:99px; transition:all .3s;"
+                    :style="i === currentIndex ? 'background:#C9A84C; flex:1;' : 'background:#ffffff18; width:20px;'">
+                </div>
             </template>
         </div>
     </div>
+
+    {{-- ══ WELCOME OVERLAY (3 Sek bei Check-in) ════════════════════════ --}}
+    <div
+        id="welcome-overlay"
+        style="position:fixed; inset:0; background:#0D0D0Df0; backdrop-filter:blur(12px); z-index:100; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center;"
+    >
+        <div style="font-size:4rem; margin-bottom:1rem; animation:bounceIn .5s ease;" id="wo-icon">🎬</div>
+        <div style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Willkommen</div>
+        <div style="font-size:4rem; font-weight:900; color:#fff; line-height:1.1; margin-bottom:.5rem;" id="wo-name"></div>
+        <div style="background:#C9A84C; color:#000; font-weight:900; font-size:1.5rem; padding:.5rem 1.5rem; border-radius:10px; letter-spacing:1px; margin-top:1rem;" id="wo-seat" style="display:none;"></div>
+        <div style="margin-top:1.5rem; color:#555; font-size:.9rem;">Viel Vergnügen! 🍿</div>
+    </div>
+
 </div>
 
 @push('scripts')
 <script>
-window.infoscreen = function(slides) {
+window.infoscreen = function(slides, initialScan) {
     return {
         slides,
         currentIndex: 0,
-        currentSlide: null,
-        currentTime: '',
+        currentSlide: slides[0] ?? null,
+        clock: '',
         timer: null,
 
         start() {
-            if (!this.slides.length) return;
-            this.currentSlide = this.slides[0];
             this.updateClock();
             setInterval(() => this.updateClock(), 1000);
             this.scheduleNext();
         },
 
         scheduleNext() {
-            const duration = (this.currentSlide?.duration ?? 10) * 1000;
-            this.timer = setTimeout(() => this.nextSlide(), duration);
-        },
-
-        nextSlide() {
-            this.currentIndex = (this.currentIndex + 1) % this.slides.length;
-            this.currentSlide = this.slides[this.currentIndex];
-            this.scheduleNext();
+            clearTimeout(this.timer);
+            const dur = (this.currentSlide?.duration ?? 10) * 1000;
+            this.timer = setTimeout(() => {
+                this.currentIndex = (this.currentIndex + 1) % this.slides.length;
+                this.currentSlide = this.slides[this.currentIndex];
+                this.scheduleNext();
+            }, dur);
         },
 
         updateClock() {
-            this.currentTime = new Date().toLocaleTimeString('de-DE', {
-                hour: '2-digit', minute: '2-digit'
-            });
-        }
+            this.clock = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        },
+
+        getCountdownText(startsAt) {
+            const diff = Math.max(0, Math.floor((new Date(startsAt) - Date.now()) / 1000));
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            const s = diff % 60;
+            return (h > 0 ? String(h).padStart(2,'0') + ':' : '') +
+                String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        },
+
+        showWelcomeOverlay(scan) {
+            const overlay = document.getElementById('welcome-overlay');
+            document.getElementById('wo-name').textContent = scan.guest_name ?? '';
+            const seatEl = document.getElementById('wo-seat');
+            if (scan.seat_label) {
+                seatEl.textContent = '💺 ' + scan.seat_label;
+                seatEl.style.display = 'inline-block';
+            } else {
+                seatEl.style.display = 'none';
+            }
+            overlay.style.display = 'flex';
+            setTimeout(() => { overlay.style.display = 'none'; }, 3000);
+        },
     }
 }
 </script>
+<style>
+@keyframes bounceIn {
+    0%   { transform:scale(.3); opacity:0; }
+    60%  { transform:scale(1.1); }
+    100% { transform:scale(1); opacity:1; }
+}
+</style>
 @endpush

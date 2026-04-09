@@ -57,3 +57,11 @@ Route::get('/ticket/{code}/wallet', function (string $code) {
 Route::get('/cinema/checkin/{screening}', \App\Livewire\Cinema\CheckinScreen::class)
     ->middleware('auth')
     ->name('cinema.checkin');
+
+// ── Einlass-Screen (Screen 2 — öffentlich, läuft auf zweitem Monitor) ─────────
+Route::get('/cinema/entrance/{screening}', \App\Livewire\Cinema\EntranceScreen::class)
+    ->name('cinema.entrance');
+
+// Infoscreen mit Screening-Bindung (für Check-in Overlay)
+Route::get('/screen/{channel}/{screening}', \App\Livewire\Infoscreen\Screen::class)
+    ->name('screen.screening');
