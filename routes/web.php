@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
     // Events
     Route::get('/events',       \App\Livewire\Admin\EventIndex::class)->name('admin.events');
     Route::get('/events/{event}', \App\Livewire\Admin\EventDetail::class)->name('admin.events.detail');
+    Route::get('/events/{event}/hub', \App\Livewire\Admin\EventHub::class)->name('admin.events.hub');
 
     // Cinema
     Route::get('/cinema',        \App\Livewire\Admin\CinemaIndex::class)->name('cinema.index');

@@ -33,7 +33,7 @@ services:
     image: mariadb:11
     restart: unless-stopped
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT:-3307}:3306"
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
       MARIADB_DATABASE: ${DB_DATABASE:-le_hub}
@@ -49,12 +49,26 @@ services:
     networks:
       - le-hub
 
-  # Für Produktion: Cloudflare Tunnel statt Port-Expose
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-  #   networks:
-  #     - le-hub
+  # ── Cloudflare Tunnel ──────────────────────────────────────────────────────
+  # Setup (einmalig):
+  #   1. cloudflared tunnel login
+  #   2. cloudflared tunnel create le-hub
+  #   3. Token aus Dashboard kopieren → CLOUDFLARE_TUNNEL_TOKEN in .env
+  #   4. docker compose --profile tunnel up -d
+  #
+  # Dann in Cloudflare Dashboard:
+  #   Tunnel → le-hub → Public Hostname:
+  #     deine-domain.de → http://nginx:80
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - nginx
+    networks:
+      - le-hub
+    profiles:
+      - tunnel   # Nur starten wenn: docker compose --profile tunnel up -d
 
 volumes:
   db_data:

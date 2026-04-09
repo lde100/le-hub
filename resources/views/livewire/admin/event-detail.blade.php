@@ -36,6 +36,10 @@ $btnGray = 'background:transparent; border:1px solid #2a2a2a; border-radius:9px;
             style="{{ $btnGray }} color:#C9A84C; border-color:#C9A84C44;">
             🔗 Link kopieren
         </button>
+        <a href="{{ route('admin.events.hub', $event->id) }}"
+            style="{{ $btnGold }} text-decoration:none;">
+            🎛 Hub
+        </a>
         <a href="{{ $event->public_url }}" target="_blank" style="{{ $btnGray }} text-decoration:none;">Vorschau ↗</a>
         @if($screening)
         <a href="{{ route('cinema.checkin', $screening->id) }}" target="_blank" style="{{ $btnGray }} text-decoration:none;">📟 Einlass</a>

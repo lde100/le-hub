@@ -46,9 +46,13 @@ $statusMeta = [
             onclick="navigator.clipboard?.writeText('{{ $e->public_url }}')">
             🔗 Link
         </a>
-        <a href="{{ route('admin.events.detail', $e->id) }}"
+        <a href="{{ route('admin.events.hub', $e->id) }}"
             style="background:#C9A84C; color:#000; font-weight:700; border-radius:8px; padding:.4rem .875rem; font-size:.8rem; text-decoration:none;">
-            Verwalten →
+            🎛 Hub
+        </a>
+        <a href="{{ route('admin.events.detail', $e->id) }}"
+            style="background:#1e1e1e; border:1px solid #2a2a2a; border-radius:8px; color:#f5f5f5; padding:.4rem .875rem; font-size:.8rem; text-decoration:none;">
+            Verwalten
         </a>
         <button wire:click="deleteEvent({{ $e->id }})"
             wire:confirm="Event '{{ $e->title }}' wirklich löschen?"

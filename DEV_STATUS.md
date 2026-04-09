@@ -127,3 +127,25 @@ docker compose exec app php artisan db:seed --class=CoreSeeder
 ## Design
 Farben: #0D0D0D (Hintergrund) · #C9A84C (Gold/Akzent) · #F5F5F5 (Text)
 Font: System-UI + Courier (Retro-Ticket)
+
+---
+
+## Event-Hub (/events/{id}/hub)
+
+Zentrale Schaltzentrale pro Event — kein URL eintippen:
+- Einladungs-Link + 📱 WhatsApp-Button + QR
+- Alle Screen-URLs mit QR-Code (Handy draufhalten → öffnet sich)
+- Ticket-Links für jeden Gast mit WhatsApp-Button
+- Cloudflare-Hinweis wenn APP_URL noch nicht HTTPS
+
+QR-Codes funktionieren nur wenn APP_URL auf die externe/Heimnetz-IP zeigt.
+
+## Deployment
+
+```
+lokal:   docker compose up -d
+extern:  docker compose --profile tunnel up -d
+```
+
+Cloudflare-Tunnel läuft als eigenes Profil — nur aktivieren wenn gebraucht.
+Vollständige Anleitung: SETUP.md
