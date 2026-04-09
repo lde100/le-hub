@@ -148,6 +148,13 @@ window.infoscreen = function(slides, initialScan) {
 
         scheduleNext() {
             clearTimeout(this.timer);
+            // Gong schedulieren wenn Countdown-Slide aktiv
+            if (this.currentSlide?.type === 'countdown' && this.currentSlide.data?.starts_at) {
+                this.activateGongSchedule(
+                    this.currentSlide.data.starts_at,
+                    this.currentSlide.data.gong_mode || 'classic'
+                );
+            }
             const dur = (this.currentSlide?.duration ?? 10) * 1000;
             this.timer = setTimeout(() => {
                 this.currentIndex = (this.currentIndex + 1) % this.slides.length;
@@ -180,7 +187,17 @@ window.infoscreen = function(slides, initialScan) {
                 seatEl.style.display = 'none';
             }
             overlay.style.display = 'flex';
+            // Kurzer Gong beim Check-in
+            if (window.playCheckinGong) window.playCheckinGong();
             setTimeout(() => { overlay.style.display = 'none'; }, 3000);
+        },
+
+        activateGongSchedule(startsAt, mode) {
+            if (!startsAt || !window.scheduleTheaterGong) return;
+            // Nur einmal schedulieren (Flag verhindert Doppelung beim Re-Render)
+            if (this._gongScheduled) return;
+            this._gongScheduled = true;
+            window.scheduleTheaterGong(startsAt, mode || 'classic');
         },
     }
 }

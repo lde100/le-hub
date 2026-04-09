@@ -177,6 +177,8 @@ window.entranceScreen = function(screeningId, initialSeconds, initialScan, scanM
             this.scanMode      = true;
             this.scanModeUntil = Math.floor(Date.now()/1000) + 30;
             this.backInSeconds = 30;
+            // 1 kurzer Gong beim Einlass
+            if (window.playCheckinGong) window.playCheckinGong();
         },
 
         getSeatStyle(seatId, isHighlighted, isCheckedIn) {
