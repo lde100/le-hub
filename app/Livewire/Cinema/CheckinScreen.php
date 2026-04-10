@@ -78,12 +78,14 @@ class CheckinScreen extends Component
                 'name'    => $ticket->booking->customer_name,
                 'used_at' => $ticket->scanned_at?->format('H:i'),
             ];
+            $this->showWelcome = false;
             $this->dispatch('scan-result', status: 'warning');
             return;
         }
 
         if ($ticket->status === 'cancelled') {
             $this->lastScan = ['status' => 'error', 'message' => 'Ticket storniert', 'code' => $code];
+            $this->showWelcome = false;
             $this->dispatch('scan-result', status: 'error');
             return;
         }
@@ -136,6 +138,18 @@ class CheckinScreen extends Component
     {
         $this->validate(['boxName' => 'required|min:2']);
 
+        // Prüfen ob Sitz bereits belegt
+        if ($this->boxSeatId) {
+            $taken = Ticket::where('screening_id', $this->screening->id)
+                ->where('seat_id', $this->boxSeatId)
+                ->whereIn('status', ['valid', 'used'])
+                ->exists();
+            if ($taken) {
+                $this->addError('boxSeatId', 'Dieser Platz ist bereits belegt.');
+                return;
+            }
+        }
+
         $booking = Booking::create([
             'screening_id'   => $this->screening->id,
             'customer_name'  => trim($this->boxName),
@@ -153,7 +167,6 @@ class CheckinScreen extends Component
             'status'       => 'valid',
         ]);
 
-        $this->screening->refresh()->load(['venue.seats', 'tickets.seat', 'tickets.booking']);
         $this->showBoxOffice = false;
         $this->dispatch('ticket-created', code: $ticket->ticket_code, url: route('ticket.show', $ticket->ticket_code));
     }

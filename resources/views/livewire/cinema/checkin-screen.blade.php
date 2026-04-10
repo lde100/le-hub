@@ -152,14 +152,23 @@
         @endif
 
         @elseif($lastScan['status'] === 'warning')
-        <div style="font-size:2.5rem; margin-bottom:.75rem;">⚠️</div>
-        <div style="font-size:1rem; color:#F59E0B; font-weight:700; margin-bottom:.375rem;">{{ $lastScan['message'] }}</div>
-        <div style="font-size:.85rem; color:#666;">{{ $lastScan['name'] ?? '' }}</div>
+        <div style="font-size:3rem; margin-bottom:.75rem;">⚠️</div>
+        <div style="font-size:1.1rem; color:#F59E0B; font-weight:700; margin-bottom:.5rem;">{{ $lastScan['message'] }}</div>
+        <div style="font-size:.9rem; color:#888; margin-bottom:.25rem;">{{ $lastScan['name'] ?? '' }}</div>
+        @if(isset($lastScan['used_at']))
+        <div style="font-size:.8rem; color:#555;">Entwertet: {{ $lastScan['used_at'] }} Uhr</div>
+        @endif
+        <div style="margin-top:1rem; background:#F59E0B18; border:1px solid #F59E0B33; border-radius:8px; padding:.625rem 1rem; font-size:.8rem; color:#F59E0B;">
+            Bereits eingecheckt
+        </div>
 
         @elseif($lastScan['status'] === 'error')
-        <div style="font-size:2.5rem; margin-bottom:.75rem;">❌</div>
-        <div style="font-size:1rem; color:#EF4444; font-weight:700; margin-bottom:.375rem;">{{ $lastScan['message'] }}</div>
-        <div style="font-size:.7rem; color:#333; font-family:monospace; word-break:break-all; margin-top:.375rem;">{{ $lastScan['code'] ?? '' }}</div>
+        <div style="font-size:3rem; margin-bottom:.75rem;">❌</div>
+        <div style="font-size:1.1rem; color:#EF4444; font-weight:700; margin-bottom:.5rem;">{{ $lastScan['message'] }}</div>
+        <div style="font-size:.75rem; color:#444; font-family:monospace; word-break:break-all; margin-top:.375rem; max-width:200px;">{{ $lastScan['code'] ?? '' }}</div>
+        <div style="margin-top:1rem; background:#EF444418; border:1px solid #EF444433; border-radius:8px; padding:.625rem 1rem; font-size:.8rem; color:#EF4444;">
+            Ungültiges Ticket
+        </div>
         @endif
     </div>
 </div>
@@ -193,6 +202,7 @@
         @endforeach
     </select>
     @endif
+    @error('boxSeatId') <div style="color:#EF4444; font-size:.8rem; margin-top:-.625rem; margin-bottom:.625rem;">{{ $message }}</div> @enderror
     <label style="font-size:.75rem; color:#888; display:block; margin-bottom:.3rem;">E-Mail (optional)</label>
     <input wire:model="boxEmail" type="email" placeholder="gast@beispiel.de" style="{{ $inp }}">
     <div style="display:flex; gap:.625rem;">
@@ -282,30 +292,7 @@
 </div>
 @endif
 
-{{-- Welcome Overlay --}}
-<div
-    x-show="showWelcome"
-    x-transition:enter="transition duration-300"
-    x-transition:enter-start="opacity-0"
-    x-transition:enter-end="opacity-100"
-    x-transition:leave="transition duration-500"
-    x-transition:leave-start="opacity-100"
-    x-transition:leave-end="opacity-0"
-    x-init="$watch('showWelcome', v => { if(v) setTimeout(() => $wire.dismissWelcome(), 4000) })"
-    style="position:fixed; inset:0; background:#0D0D0Dee; backdrop-filter:blur(8px); z-index:50; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;"
->
-    @if($lastScan && $lastScan['status'] === 'success')
-    <div style="font-size:4rem; margin-bottom:1rem;">🎬</div>
-    <div style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Willkommen</div>
-    <div style="font-size:3rem; font-weight:900; margin-bottom:.75rem;">{{ $lastScan['name'] ?? '' }}</div>
-    @if($lastScan['seat'] ?? null)
-    <div style="background:#C9A84C; color:#000; font-weight:900; font-size:1.75rem; padding:.625rem 1.75rem; border-radius:10px; letter-spacing:2px;">
-        💺 {{ $lastScan['seat'] }}
-    </div>
-    @endif
-    <div style="margin-top:1.5rem; color:#444; font-size:.875rem;">Viel Vergnügen! 🍿</div>
-    @endif
-</div>
+{{-- Kein Vollbild-Overlay auf Scanner-PC — Welcome läuft auf Infoscreen/EntranceScreen --}}
 
 </div>
 
@@ -313,7 +300,6 @@
 <script>
 window.checkinApp = function() {
     return {
-        showWelcome: @entangle('showWelcome'),
         chimeEnabled: localStorage.getItem('le_chime_enabled') !== 'false',
 
         init() {
