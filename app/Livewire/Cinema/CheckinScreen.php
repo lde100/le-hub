@@ -295,43 +295,31 @@ class CheckinScreen extends Component
 
     // ── Hilfs-Getter ────────────────────────────────────────────────────────
 
-    public function getCheckedInCountAttribute(): int
+    private function computeStats(): array
     {
-        return $this->screening->fresh()->tickets->where('status', 'used')->count();
-    }
+        $fresh           = $this->screening->fresh(['tickets.seat', 'tickets.booking', 'venue.seats', 'movie']);
+        $tickets         = $fresh->tickets;
+        $checkedIn       = $tickets->where('status', 'used');
+        $checkedInCount  = $checkedIn->count();
+        $totalTickets    = $tickets->whereIn('status', ['valid','used'])->count();
+        $checkedInSeats  = $checkedIn->pluck('seat_id')->filter()->toArray();
+        $allDone         = $totalTickets > 0 && $checkedInCount === $totalTickets;
+        $pending         = $tickets->where('status', 'valid')->values();
 
-    public function getTotalTicketsAttribute(): int
-    {
-        return $this->screening->tickets->whereIn('status', ['valid','used'])->count();
-    }
-
-    public function getCheckedInSeatIdsAttribute(): array
-    {
-        return $this->screening->fresh()->tickets
-            ->where('status', 'used')->pluck('seat_id')->filter()->toArray();
-    }
-
-    public function getAllDoneAttribute(): bool
-    {
-        return $this->total_tickets > 0 && $this->checked_in_count === $this->total_tickets;
-    }
-
-    public function getPendingTicketsAttribute()
-    {
-        return $this->screening->fresh()->load('tickets.seat','tickets.booking')
-            ->tickets->where('status', 'valid')->values();
+        return compact('checkedInCount', 'totalTickets', 'checkedInSeats', 'allDone', 'pending', 'fresh');
     }
 
     public function render()
     {
-        $this->screening->load(['venue.seats', 'movie', 'tickets.seat', 'tickets.booking']);
+        $stats = $this->computeStats();
 
         return view('livewire.cinema.checkin-screen', [
-            'checked_in_count'    => $this->checked_in_count,
-            'total_tickets'       => $this->total_tickets,
-            'checked_in_seat_ids' => $this->checked_in_seat_ids,
-            'all_done'            => $this->all_done,
-            'pending_tickets'     => $this->pending_tickets,
+            'checked_in_count'    => $stats['checkedInCount'],
+            'total_tickets'       => $stats['totalTickets'],
+            'checked_in_seat_ids' => $stats['checkedInSeats'],
+            'all_done'            => $stats['allDone'],
+            'pending_tickets'     => $stats['pending'],
+            'screening'           => $stats['fresh'],
         ])->layout('layouts.checkin');
     }
 }
