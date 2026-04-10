@@ -268,6 +268,15 @@ class PublicEventPage extends Component
 
     public function render()
     {
+        // Immer frisch laden — Livewire hydratiert Models ohne Eager Loading
+        $this->event->load([
+            'polls.options.votes',
+            'polls.votes',
+            'venue.seats',
+            'seatRequests',
+            'screenings.movie',
+        ]);
+
         return view('livewire.event.public-page')
             ->layout('layouts.public');
     }

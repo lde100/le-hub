@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class Guest extends Model
 {
     protected $fillable = [
-        'name', 'email', 'phone', 'magic_token', 'guest_number',
+        'name', 'email', 'phone', 'magic_token', 'pin_hash', 'guest_number',
         'loyalty_points', 'visit_count', 'last_visit_at',
         'token_expires_at', 'email_verified_at', 'meta'
     ];
