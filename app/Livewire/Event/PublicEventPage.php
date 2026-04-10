@@ -84,12 +84,11 @@ class PublicEventPage extends Component
         $this->authError = '';
         $this->validate([
             'guestName' => 'required|min:2|max:80',
-            'guestPin'  => 'required|min:4|max:8|numeric',
+            'guestPin'  => 'required|digits_between:4,8',
             'guestPin2' => 'required|same:guestPin',
         ], [
-            'guestPin2.same' => 'PINs stimmen nicht überein.',
-            'guestPin.numeric' => 'PIN darf nur Zahlen enthalten.',
-            'guestPin.min' => 'PIN muss mindestens 4 Stellen haben.',
+            'guestPin2.same'          => 'PINs stimmen nicht überein.',
+            'guestPin.digits_between' => 'PIN muss 4–8 Ziffern haben.',
         ]);
 
         // Name bereits vergeben?
@@ -115,7 +114,7 @@ class PublicEventPage extends Component
         $this->authError = '';
         $this->validate([
             'guestName' => 'required|min:2',
-            'guestPin'  => 'required|min:4|numeric',
+            'guestPin'  => 'required|digits_between:4,8',
         ]);
 
         $guest = Guest::where('name', $this->guestName)->whereNotNull('pin_hash')->first();
