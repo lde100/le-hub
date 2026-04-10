@@ -53,8 +53,14 @@ class PublicEventPage extends Component
             'screenings.movie',
         ])->where('public_token', $token)->firstOrFail();
 
-        // Magic Token → Gast wiedererkennen
+        // 1. Magic Token aus URL
         $magicToken = request('token');
+
+        // 2. Fallback: Token aus Session (nach Reload)
+        if (!$magicToken) {
+            $magicToken = session('le_guest_token_' . $this->event->public_token);
+        }
+
         if ($magicToken) {
             $this->guest = Guest::findByToken($magicToken);
             if ($this->guest) {
@@ -96,6 +102,17 @@ class PublicEventPage extends Component
         $this->step = 'interact';
         $this->showNameForm = false;
         $this->loadExistingVotes();
+
+        // Persönlichen Link in Session speichern damit Browser-Reload funktioniert
+        if ($this->guest?->magic_token) {
+            session(['le_guest_token_' . $this->event->public_token => $this->guest->magic_token]);
+        }
+
+        $this->dispatch('show-personal-link',
+            url: $this->guest?->magic_token
+                ? url('/event/' . $this->event->public_token . '?token=' . $this->guest->magic_token)
+                : null
+        );
     }
 
     private function loadExistingVotes(): void
