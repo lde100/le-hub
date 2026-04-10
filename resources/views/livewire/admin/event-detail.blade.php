@@ -181,9 +181,11 @@ $btnGray = 'background:transparent; border:1px solid #2a2a2a; border-radius:9px;
         <div style="font-size:.75rem; color:#888; margin-bottom:.625rem;">Film-Vorschläge (optional)</div>
         @foreach($filmOptions as $i => $opt)
         <div style="display:flex; gap:.5rem; margin-bottom:.5rem; align-items:center;">
-            <input wire:model="filmOptions.{{ $i }}.title" type="text" placeholder="Filmtitel" style="flex:2; {{ $inp }} margin-bottom:0;">
-            <input wire:model="filmOptions.{{ $i }}.year" type="text" placeholder="Jahr" style="width:80px; {{ $inp }} margin-bottom:0;">
-            <button wire:click="removeFilmOption({{ $i }})" style="background:none;border:none;color:#555;cursor:pointer;font-size:1.1rem;">×</button>
+            <input wire:model="filmOptions.{{ $i }}.title" type="text" placeholder="Filmtitel"
+                style="flex:1; min-width:0; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:8px; padding:.625rem .875rem; color:#f5f5f5; font-size:.875rem; outline:none;">
+            <input wire:model="filmOptions.{{ $i }}.year" type="text" placeholder="Jahr"
+                style="width:80px; flex-shrink:0; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:8px; padding:.625rem .75rem; color:#f5f5f5; font-size:.875rem; outline:none;">
+            <button wire:click="removeFilmOption({{ $i }})" style="background:none;border:none;color:#555;cursor:pointer;font-size:1.1rem;flex-shrink:0;">×</button>
         </div>
         @endforeach
         <div style="display:flex; gap:.5rem; margin-top:.5rem;">
