@@ -16,7 +16,14 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Vite-Build (erzeugt public/build/manifest.json)
+# Vite-Build — wird im Image gespeichert
+# Entrypoint baut nach falls Volume-Mount die Dateien überschreibt
 RUN npm install && npm run build
 
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+
+COPY docker/php/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["php-fpm"]
