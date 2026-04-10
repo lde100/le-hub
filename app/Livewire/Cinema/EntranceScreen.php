@@ -64,30 +64,27 @@ class EntranceScreen extends Component
         $this->lastStateSeq   = $broadcast->getStateSeq($screening->id);
     }
 
-    public function getSecondsUntilStartAttribute(): int
+    private function computeStats(): array
     {
-        return max(0, now()->diffInSeconds($this->screening->starts_at, false));
-    }
+        $fresh = $this->screening->fresh(['tickets', 'venue.seats', 'movie']);
+        $checkedInSeats = $fresh->tickets->where('status', 'used')->pluck('seat_id')->filter()->toArray();
+        $checkedInCount = count($checkedInSeats);
+        $total          = $fresh->tickets->whereIn('status', ['valid', 'used'])->count();
+        $secondsUntil   = max(0, now()->diffInSeconds($fresh->starts_at, false));
 
-    public function getCheckedInSeatIdsAttribute(): array
-    {
-        return $this->screening->fresh()->tickets
-            ->where('status', 'used')->pluck('seat_id')->filter()->toArray();
-    }
-
-    public function getCheckedInCountAttribute(): int
-    {
-        return count($this->checked_in_seat_ids);
-    }
-
-    public function getTotalAttribute(): int
-    {
-        return $this->screening->tickets->whereIn('status', ['valid', 'used'])->count();
+        return compact('fresh', 'checkedInSeats', 'checkedInCount', 'total', 'secondsUntil');
     }
 
     public function render()
     {
-        return view('livewire.cinema.entrance-screen')
-            ->layout('layouts.infoscreen');
+        $stats = $this->computeStats();
+
+        return view('livewire.cinema.entrance-screen', [
+            'screening'           => $stats['fresh'],
+            'checked_in_seat_ids' => $stats['checkedInSeats'],
+            'checked_in_count'    => $stats['checkedInCount'],
+            'total'               => $stats['total'],
+            'seconds_until_start' => $stats['secondsUntil'],
+        ])->layout('layouts.infoscreen');
     }
 }

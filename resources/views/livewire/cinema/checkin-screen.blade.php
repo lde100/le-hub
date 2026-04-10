@@ -2,7 +2,7 @@
     style="display:grid; grid-template-columns:1fr 340px; height:100dvh; gap:0; font-family:system-ui,sans-serif;"
     x-data="checkinApp()"
     @handle-scan.window="$wire.handleScan($event.detail.code)"
-    @scan-result.window="playChime($event.detail.status)"
+    @scan-result.window="playChime($event.detail.status); setTimeout(() => document.getElementById('scan-input')?.focus(), 100)"
     @ticket-created.window="onTicketCreated($event.detail)"
 >
 
@@ -135,8 +135,14 @@
         <div style="font-size:2.5rem; margin-bottom:.75rem; opacity:.4;">📟</div>
         <div style="font-size:.95rem; color:#444; margin-bottom:1.25rem;">Bereit zum Scannen</div>
         <div x-data="{ code: '' }" style="width:100%; padding:0 .5rem;">
-            <input x-model="code" type="text" placeholder="Code eingeben + Enter..."
+            <input
+                x-model="code"
+                x-ref="scanInput"
+                id="scan-input"
+                type="text"
+                placeholder="Code eingeben + Enter..."
                 @keydown.enter="if(code.trim()){ Livewire.dispatch('handle-scan',{code:code.trim()}); code=''; }"
+                x-init="$el.focus()"
                 style="width:100%; background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:.75rem 1rem; color:#f5f5f5; font-size:.875rem; outline:none; text-align:center;">
             <div style="font-size:.7rem; color:#444; margin-top:.375rem;">Manuelle Eingabe oder HID-Scanner</div>
         </div>
