@@ -361,7 +361,7 @@
     :style="showWelcome ? '' : 'display:none'"
 >
     @if($lastScan && $lastScan['status'] === 'success')
-    <div style="font-size:4rem; margin-bottom:1rem; animation:bounceIn .5s;">🎬</div>
+    <div style="font-size:4rem; margin-bottom:1rem; animation:leBouncIn .5s;">🎬</div>
     <div style="font-size:.8rem; color:#C9A84C; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.75rem;">Willkommen</div>
     <div style="font-size:3rem; font-weight:900; margin-bottom:.75rem;">{{ $lastScan['name'] ?? '' }}</div>
     @if($lastScan['seat'] ?? null)
@@ -375,13 +375,20 @@
 
 </div>
 
-@verbatim
-<style>
-@keyframes bounceIn { 0%{transform:scale(.3);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
-</style>
-@endverbatim
-
 @push('scripts')
+<style>
+    .bounce-in { animation: leBouncIn .5s; }
+    @-webkit-keyframes leBouncIn {
+        0%   { transform:scale(.3); opacity:0; }
+        60%  { transform:scale(1.08); }
+        100% { transform:scale(1); opacity:1; }
+    }
+    @keyframes leBouncIn {
+        0%   { transform:scale(.3); opacity:0; }
+        60%  { transform:scale(1.08); }
+        100% { transform:scale(1); opacity:1; }
+    }
+</style>
 <script>
 window.checkinApp = function() {
     return {
