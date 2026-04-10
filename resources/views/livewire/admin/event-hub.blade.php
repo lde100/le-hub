@@ -1,23 +1,13 @@
 <div x-data="{
     copiedUrl: '',
     copyUrl(text) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => {
-                this.copiedUrl = text;
-                setTimeout(() => this.copiedUrl = '', 2000);
-            }).catch(() => this.fallbackCopy(text));
-        } else {
-            this.fallbackCopy(text);
-        }
-    },
-    fallbackCopy(text) {
         const el = document.createElement('textarea');
         el.value = text;
-        el.style.position = 'fixed';
-        el.style.opacity = '0';
+        el.setAttribute('readonly', '');
+        el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
         document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
+        el.focus(); el.select();
+        try { document.execCommand('copy'); } catch(e) {}
         document.body.removeChild(el);
         this.copiedUrl = text;
         setTimeout(() => this.copiedUrl = '', 2000);

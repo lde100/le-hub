@@ -67,7 +67,7 @@
         @foreach ($poll->options as $option)
         @php
             $myVote = collect($selectedOptionIds)->contains($option->id)
-                ? PollVote::where(['poll_id'=>$poll->id,'option_id'=>$option->id,'guest_id'=>$guest?->id])->value('vote_value')
+                ? \App\Models\PollVote::where(['poll_id'=>$poll->id,'option_id'=>$option->id,'guest_id'=>$guest?->id])->value('vote_value')
                 : null;
             $yesCount = $option->votes->where('vote_value','yes')->count();
             $maybeCount = $option->votes->where('vote_value','maybe')->count();
