@@ -166,3 +166,17 @@ seat_requests, attendances
 - Apple Wallet: braucht Apple Developer Zertifikat
 - TMDB/Emby: `.env` Keys eintragen wenn ready
 - Migration-Konflikt: Laravel-Standard `users`-Migration + eigene — prüfen beim ersten `migrate`
+
+---
+
+## Backlog (während Testphase gesammelt)
+
+### Voting-Audit (Admin)
+- [ ] Admin sieht pro Poll: wer hat wann für was gestimmt
+- [ ] Änderungshistorie: ursprünglicher Vote + wann geändert + neuer Vote
+- [ ] Tabellen-Ansicht in Event-Detail: Spalten = Optionen, Zeilen = Gäste
+- [ ] Timestamps der Votes anzeigen (created_at + updated_at auf poll_votes)
+- [ ] Export möglich (später)
+
+Technisch: poll_votes hat already created_at/updated_at — Daten sind da,
+nur die Admin-UI fehlt noch.
