@@ -35,7 +35,7 @@
     {{-- ── EVENT HEADER ────────────────────────────────────────────────── --}}
     <div style="margin-bottom:2rem;">
         <div style="font-size:.8rem; color:var(--le-gold); letter-spacing:.1em; text-transform:uppercase; margin-bottom:.5rem;">
-            {{ Event::STATUSES[$event->status] ?? $event->status }}
+            {{ \App\Models\Event::STATUSES[$event->status] ?? $event->status }}
         </div>
         <h1 style="font-size:1.75rem; font-weight:800; margin:0 0 .5rem; line-height:1.2;">{{ $event->title }}</h1>
         @if($event->description)
