@@ -217,7 +217,7 @@
                     Ticket öffnen
                 </a>
                 <button
-                    onclick="navigator.clipboard.writeText('{{ $guest['ticket_url'] }}').then(()=>this.textContent='✅ Kopiert')"
+                    onclick="fallbackCopy('{{ $guest['ticket_url'] }}').then(()=>this.textContent='✅ Kopiert')"
                     style="font-size:.8rem; background:#1e1e1e; border:1px solid #333; color:#888; padding:.375rem .875rem; border-radius:7px; cursor:pointer;">
                     📋 Kopieren
                 </button>

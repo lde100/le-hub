@@ -32,7 +32,7 @@ $btnGray = 'background:transparent; border:1px solid #2a2a2a; border-radius:9px;
     <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
         {{-- Öffentlicher Link --}}
         <button
-            onclick="navigator.clipboard.writeText('{{ $event->public_url }}').then(()=>this.textContent='✅ Kopiert').catch(()=>{}); setTimeout(()=>this.textContent='🔗 Link kopieren',2000)"
+            onclick="fallbackCopy('{{ $event->public_url }}').then(()=>this.textContent='✅ Kopiert').catch(()=>{}); setTimeout(()=>this.textContent='🔗 Link kopieren',2000)"
             style="{{ $btnGray }} color:#C9A84C; border-color:#C9A84C44;">
             🔗 Link kopieren
         </button>
@@ -296,7 +296,7 @@ $btnGray = 'background:transparent; border:1px solid #2a2a2a; border-radius:9px;
         <div style="display:flex; gap:.375rem; align-items:center;">
             @if($req->status === 'confirmed' && $ticket)
             <button
-                onclick="navigator.clipboard.writeText('{{ route('ticket.show', $ticket->ticket_code) }}').then(()=>this.textContent='✅').catch(()=>{}); setTimeout(()=>this.textContent='📋',1500)"
+                onclick="fallbackCopy('{{ route('ticket.show', $ticket->ticket_code) }}').then(()=>this.textContent='✅').catch(()=>{}); setTimeout(()=>this.textContent='📋',1500)"
                 style="{{ $btnGray }} font-size:.75rem; padding:.3rem .625rem; color:#C9A84C; border-color:#C9A84C44;">
                 📋
             </button>

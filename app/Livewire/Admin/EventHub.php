@@ -3,8 +3,8 @@
 namespace App\Livewire\Admin;
 
 use App\Models\Event;
-use App\Models\Ticket;
 use Livewire\Component;
+use Livewire\Attributes\Computed;
 
 class EventHub extends Component
 {
@@ -21,12 +21,14 @@ class EventHub extends Component
         ]);
     }
 
-    public function getScreeningAttribute()
+    #[Computed]
+    public function screening()
     {
         return $this->event->screenings->first();
     }
 
-    public function getTicketsAttribute()
+    #[Computed]
+    public function tickets()
     {
         return $this->screening?->tickets
             ->whereIn('status', ['valid', 'used'])
@@ -34,11 +36,8 @@ class EventHub extends Component
             ?? collect();
     }
 
-    /**
-     * Alle Links die für dieses Event relevant sind.
-     * Gruppiert nach Kategorie für die UI.
-     */
-    public function getLinksAttribute(): array
+    #[Computed]
+    public function links(): array
     {
         $screeningId = $this->screening?->id;
         $baseUrl     = config('app.url');
@@ -59,6 +58,30 @@ class EventHub extends Component
         ];
 
         if ($screeningId) {
+            $links['overlays'] = [
+                'label' => 'vMix Overlays (Schwarz = transparent)',
+                'items' => [
+                    [
+                        'label' => '🎬 Film-Countdown (5 Sek)',
+                        'url'   => "{$baseUrl}/overlay/countdown/{$screeningId}?duration=5",
+                        'hint'  => 'Klassischer 5-4-3-2-1 Countdown mit Filmkorn + Kratzer',
+                        'qr'    => true,
+                    ],
+                    [
+                        'label' => '🎭 Vorhang öffnet sich',
+                        'url'   => "{$baseUrl}/overlay/curtain/{$screeningId}",
+                        'hint'  => 'Rote Samtvorhänge öffnen sich (2 Sek)',
+                        'qr'    => true,
+                    ],
+                    [
+                        'label' => '🎉 Live-Reaktionen',
+                        'url'   => "{$baseUrl}/overlay/reactions/{$screeningId}",
+                        'hint'  => 'Emojis von Gästen fliegen hoch — dauerhaft aktiv halten',
+                        'qr'    => true,
+                    ],
+                ],
+            ];
+
             $links['screens'] = [
                 'label' => 'Screens',
                 'items' => [
@@ -102,10 +125,7 @@ class EventHub extends Component
 
     public function render()
     {
-        return view('livewire.admin.event-hub', [
-            'screening' => $this->screening,
-            'tickets'   => $this->tickets,
-            'links'     => $this->links,
-        ])->layout('layouts.app', ['title' => 'Hub · ' . $this->event->title]);
+        return view('livewire.admin.event-hub')
+            ->layout('layouts.app', ['title' => 'Hub · ' . $this->event->title]);
     }
 }

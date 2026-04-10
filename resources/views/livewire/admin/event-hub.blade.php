@@ -1,4 +1,28 @@
-<div x-data="{ copiedUrl: '' }">
+<div x-data="{
+    copiedUrl: '',
+    copyUrl(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                this.copiedUrl = text;
+                setTimeout(() => this.copiedUrl = '', 2000);
+            }).catch(() => this.fallbackCopy(text));
+        } else {
+            this.fallbackCopy(text);
+        }
+    },
+    fallbackCopy(text) {
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        this.copiedUrl = text;
+        setTimeout(() => this.copiedUrl = '', 2000);
+    }
+}">
 
 {{-- ── Header ────────────────────────────────────────────────────────────── --}}
 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:.75rem;">
@@ -67,7 +91,7 @@
                 {{-- Kopieren --}}
                 <button
                     @click="
-                        navigator.clipboard.writeText('{{ $link['url'] }}')
+                        copyUrl('{{ $link['url'] }}')
                             .then(() => { copiedUrl = '{{ $link['url'] }}'; setTimeout(() => copiedUrl = '', 2000); })
                             .catch(() => {});
                     "
@@ -131,7 +155,7 @@
             </div>
             <div style="display:flex; gap:.375rem; flex-wrap:wrap;">
                 <button
-                    @click="navigator.clipboard.writeText('{{ $url }}').then(()=>{ copiedUrl='{{ $url }}'; setTimeout(()=>copiedUrl='',2000); }).catch(()=>{})"
+                    @click="copyUrl('{{ $url }}').then(()=>{ copiedUrl='{{ $url }}'; setTimeout(()=>copiedUrl='',2000); }).catch(()=>{})"
                     style="background:#1e1e1e; border:1px solid #2a2a2a; border-radius:7px; padding:.35rem .75rem; font-size:.775rem; cursor:pointer;"
                     :style="copiedUrl === '{{ $url }}' ? 'border-color:#22C55E44; color:#22C55E;' : 'color:#888;'"
                 >
