@@ -17,6 +17,13 @@ class EventDetail extends Component
 {
     public Event $event;
 
+    // Direktes Datum + Film setzen (ohne Poll)
+    public bool   $showDirectDate   = false;
+    public string $directDate       = '';
+    public string $directTime       = '20:00';
+    public string $directFilmTitle  = '';
+    public string $directFilmYear   = '';
+
     // Date Poll
     public bool   $showDatePollForm = false;
     public string $datePollTitle    = 'Wann passt es euch?';
@@ -212,9 +219,27 @@ class EventDetail extends Component
         $this->reload();
     }
 
-    public function setAdminFilm(string $title, ?string $year = null): void
+    public function setDirectDate(): void
     {
-        // Admin legt Film direkt fest ohne Abstimmung
+        $this->validate(['directDate' => 'required|date']);
+
+        EventSlot::updateOrCreate(
+            ['event_id' => $this->event->id, 'is_confirmed' => true],
+            [
+                'proposed_at'  => $this->directDate . ' ' . $this->directTime . ':00',
+                'is_confirmed' => true,
+            ]
+        );
+
+        $this->showDirectDate = false;
+        $this->event->update(['status' => 'polling_film']);
+        $this->reload();
+    }
+
+    public function setAdminFilm(): void
+    {
+        $this->validate(['directFilmTitle' => 'required|min:2']);
+        $title = $this->directFilmTitle;
         $movie = Movie::firstOrCreate(['title' => $title], ['is_active' => true]);
 
         $slot = EventSlot::where('event_id', $this->event->id)
@@ -242,6 +267,8 @@ class EventDetail extends Component
         );
 
         $slot->update(['screening_id' => $screening->id]);
+        $this->directFilmTitle = '';
+        $this->directFilmYear  = '';
         $this->event->update(['status' => 'booking_open']);
         $this->reload();
     }

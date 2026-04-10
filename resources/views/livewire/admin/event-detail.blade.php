@@ -145,11 +145,28 @@ $btnGray = 'background:transparent; border:1px solid #2a2a2a; border-radius:9px;
 
     {{-- Termin direkt setzen ohne Poll --}}
     @if($event->status === 'draft')
-    <div style="margin-top:.75rem; font-size:.8rem; color:#555;">
-        Oder:
-        <button wire:click="advanceTo('polling_film')" style="background:none;border:none;color:#C9A84C;cursor:pointer;text-decoration:underline;font-size:.8rem;">
-            Termin überspringen → direkt zu Film-Phase
+    <div style="margin-top:.75rem;">
+        @if(!$showDirectDate)
+        <button wire:click="$set('showDirectDate',true)"
+            style="background:none;border:none;color:#C9A84C;cursor:pointer;text-decoration:underline;font-size:.8rem;">
+            Termin direkt setzen (ohne Abstimmung)
         </button>
+        @else
+        <div style="background:#0D0D0D; border:1px solid #2a2a2a; border-radius:10px; padding:1rem; margin-top:.75rem;">
+            <div style="font-size:.8rem; color:#888; margin-bottom:.75rem;">Termin direkt festlegen</div>
+            <div style="display:flex; gap:.5rem; margin-bottom:.75rem; flex-wrap:wrap;">
+                <input wire:model="directDate" type="date"
+                    style="flex:1; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:8px; padding:.625rem; color:#f5f5f5; font-size:.875rem; outline:none;">
+                <input wire:model="directTime" type="time"
+                    style="width:110px; background:#0D0D0D; border:1px solid #2a2a2a; border-radius:8px; padding:.625rem; color:#f5f5f5; font-size:.875rem; outline:none;">
+            </div>
+            @error('directDate') <div style="color:#EF4444; font-size:.75rem; margin-bottom:.5rem;">{{ $message }}</div> @enderror
+            <div style="display:flex; gap:.5rem;">
+                <button wire:click="setDirectDate" style="{{ $btnGold }}">Termin setzen →</button>
+                <button wire:click="$set('showDirectDate',false)" style="{{ $btnGray }}">Abbrechen</button>
+            </div>
+        </div>
+        @endif
     </div>
     @endif
 </div>
@@ -237,15 +254,18 @@ $btnGray = 'background:transparent; border:1px solid #2a2a2a; border-radius:9px;
     @empty
     <div style="color:#444; font-size:.875rem; padding:.5rem 0;">
         @if($event->status === 'polling_film')
-            Noch keine Film-Umfrage. Oder:
-            <form style="display:inline-flex; gap:.5rem; align-items:center; margin-top:.5rem;">
-                <input type="text" id="directFilm" placeholder="Filmtitel direkt setzen" style="background:#0D0D0D; border:1px solid #333; border-radius:7px; padding:.4rem .75rem; color:#f5f5f5; font-size:.85rem; outline:none;">
-                <button type="button"
-                    onclick="$wire.setAdminFilm(document.getElementById('directFilm').value)"
-                    style="{{ $btnGold }} font-size:.8rem; padding:.4rem .875rem;">
-                    Direkt festlegen
+            Noch keine Film-Umfrage. Oder Film direkt festlegen:
+            <div style="display:flex; gap:.5rem; align-items:center; margin-top:.75rem; flex-wrap:wrap;">
+                <input wire:model="directFilmTitle" type="text" placeholder="Filmtitel"
+                    style="flex:1; background:#0D0D0D; border:1px solid #333; border-radius:7px; padding:.5rem .75rem; color:#f5f5f5; font-size:.875rem; outline:none; min-width:150px;">
+                <input wire:model="directFilmYear" type="text" placeholder="Jahr"
+                    style="width:80px; background:#0D0D0D; border:1px solid #333; border-radius:7px; padding:.5rem .625rem; color:#f5f5f5; font-size:.875rem; outline:none;">
+                <button wire:click="setAdminFilm"
+                    style="{{ $btnGold }} font-size:.8rem; padding:.5rem .875rem;">
+                    Festlegen → Buchung öffnen
                 </button>
-            </form>
+            </div>
+            @error('directFilmTitle') <div style="color:#EF4444; font-size:.75rem; margin-top:.375rem;">{{ $message }}</div> @enderror
         @else
             Noch nicht in dieser Phase.
         @endif
