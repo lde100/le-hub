@@ -102,7 +102,10 @@ class EventHub extends Component
 
     public function render()
     {
-        return view('livewire.admin.event-hub')
-            ->layout('layouts.app', ['title' => 'Hub · ' . $this->event->title]);
+        return view('livewire.admin.event-hub', [
+            'screening' => $this->screening,
+            'tickets'   => $this->tickets,
+            'links'     => $this->links,
+        ])->layout('layouts.app', ['title' => 'Hub · ' . $this->event->title]);
     }
 }
