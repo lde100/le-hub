@@ -324,7 +324,14 @@ class CheckinScreen extends Component
 
     public function render()
     {
-        return view('livewire.cinema.checkin-screen')
-            ->layout('layouts.checkin');
+        $this->screening->load(['venue.seats', 'movie', 'tickets.seat', 'tickets.booking']);
+
+        return view('livewire.cinema.checkin-screen', [
+            'checked_in_count'    => $this->checked_in_count,
+            'total_tickets'       => $this->total_tickets,
+            'checked_in_seat_ids' => $this->checked_in_seat_ids,
+            'all_done'            => $this->all_done,
+            'pending_tickets'     => $this->pending_tickets,
+        ])->layout('layouts.checkin');
     }
 }
