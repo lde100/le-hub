@@ -237,6 +237,10 @@
         @endif
     </div>
     @else
+    @if($event->seating_mode === 'open')
+    {{-- Freie Platzwahl: nur "Ich bin dabei" --}}
+    <p style="color:#666; font-size:.875rem; margin:0 0 1rem;">Freie Platzwahl — melde dich einfach an.</p>
+    @else
     @if($event->venue)
     @php $seatsByRow = $event->venue->seats->where('is_active', true)->groupBy('row'); @endphp
     <div style="margin-bottom:1rem;">
@@ -260,11 +264,12 @@
         @endforeach
     </div>
     @endif
+    @endif
     <textarea wire:model="seatNotes" placeholder="Anmerkungen (optional)"
         style="width:100%; background:#111; border:1px solid #2a2a2a; border-radius:8px; padding:.75rem; color:#f5f5f5; font-size:.875rem; outline:none; resize:none; margin-bottom:.75rem;" rows="2"></textarea>
     <button wire:click="submitSeatRequest"
         style="width:100%; background:#C9A84C; color:#000; font-weight:700; padding:.875rem; border-radius:10px; border:none; font-size:1rem; cursor:pointer;">
-        Platz anfragen
+        {{ $event->seating_mode === 'open' ? '✅ Ich bin dabei' : 'Platz anfragen' }}
     </button>
     @endif
 </div>
