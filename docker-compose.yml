@@ -6,9 +6,9 @@ services:
       dockerfile: docker/php/Dockerfile
     restart: unless-stopped
     volumes:
-      - ./storage:/var/www/storage          # Logs, Uploads, Cache persistent
-      - ./.env:/var/www/.env                # .env von außen
-      - build_cache:/var/www/public/build   # Vite-Build persistent (kein Überschreiben)
+      - .:/var/www                          # Source live gemountet
+      - /var/www/vendor                     # vendor vom Image behalten
+      - build_cache:/var/www/public/build   # Vite-Build nicht überschreiben
     environment:
       - APP_ENV=${APP_ENV:-local}
     depends_on:

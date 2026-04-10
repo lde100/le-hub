@@ -5,7 +5,7 @@
     <div>
         <a href="{{ route('admin.events.detail', $event->id) }}" style="font-size:.8rem; color:#555; text-decoration:none;">← Event-Detail</a>
         <h1 style="font-size:1.25rem; font-weight:800; margin-top:.25rem;">🎛 Hub · {{ $event->title }}</h1>
-        @if($screening)
+        @if(isset($screening) && $screening)
         <div style="font-size:.85rem; color:#888; margin-top:.375rem;">
             🎬 {{ $screening->movie?->title }} ·
             {{ $screening->starts_at->isoFormat('D. MMMM · HH:mm') }} Uhr
@@ -104,7 +104,7 @@
 @endforeach
 
 {{-- ── TICKET-LINKS ─────────────────────────────────────────────────────────── --}}
-@if($tickets->count())
+@if(isset($tickets) && $tickets->count())
 <div style="margin-bottom:1.5rem;">
     <div style="font-size:.7rem; color:#555; text-transform:uppercase; letter-spacing:.12em; margin-bottom:.75rem;">
         Tickets ({{ $tickets->count() }})
@@ -151,7 +151,7 @@
         @endforeach
     </div>
 </div>
-@elseif($screening)
+@elseif(isset($screening) && $screening)
 <div style="background:#141414; border:1px solid #1e1e1e; border-radius:14px; padding:1.25rem; text-align:center; color:#444; font-size:.875rem;">
     Noch keine Tickets generiert. <a href="{{ route('admin.events.detail', $event->id) }}" style="color:#C9A84C; text-decoration:none;">Sitzplatz-Anfragen bestätigen →</a>
 </div>
