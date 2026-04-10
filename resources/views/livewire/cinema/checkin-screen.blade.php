@@ -177,7 +177,18 @@
 
         @if(!$lastScan)
         <div style="font-size:2.5rem; margin-bottom:.75rem; opacity:.4;">📟</div>
-        <div style="font-size:.95rem; color:#444;">Bereit zum Scannen</div>
+        <div style="font-size:.95rem; color:#444; margin-bottom:1.25rem;">Bereit zum Scannen</div>
+        {{-- Manuelle Eingabe als Fallback (z.B. ohne Scanner) --}}
+        <div x-data="{ code: '' }" style="width:100%; padding:0 1rem;">
+            <input
+                x-model="code"
+                type="text"
+                placeholder="Ticket-Code manuell eingeben..."
+                @keydown.enter="if(code.trim()) { Livewire.dispatch('handle-scan', { code: code.trim() }); code = ''; }"
+                style="width:100%; background:#141414; border:1px solid #2a2a2a; border-radius:10px; padding:.75rem 1rem; color:#f5f5f5; font-size:.875rem; outline:none; text-align:center; letter-spacing:.05em;"
+            >
+            <div style="font-size:.7rem; color:#444; margin-top:.375rem; text-align:center;">Enter drücken zum Scannen</div>
+        </div>
 
         @elseif($lastScan['status'] === 'success')
         <div style="font-size:3rem; margin-bottom:.75rem; animation:bounceIn .4s ease;">✅</div>
@@ -364,9 +375,11 @@
 
 </div>
 
+@verbatim
 <style>
 @keyframes bounceIn { 0%{transform:scale(.3);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
 </style>
+@endverbatim
 
 @push('scripts')
 <script>
