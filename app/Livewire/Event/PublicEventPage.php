@@ -6,37 +6,31 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\PollVote;
 use App\Models\SeatRequest;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 
-/**
- * Öffentliche Event-Seite (kein Login nötig)
- * URL: /event/{token}?token={magic_token}
- *
- * Lifecycle-Phasen die diese Komponente rendert:
- *  1. polling_date  → Terminabstimmung
- *  2. polling_film  → Film-Voting / Filmwünsche
- *  3. booking_open  → Sitzplatz anfragen
- *  4. confirmed     → Ticket ansehen
- *  5. finished      → Danke + Stats
- */
 class PublicEventPage extends Component
 {
     public Event $event;
     public ?Guest $guest = null;
 
-    // Gast-Identifikation
+    // Auth-State
+    public string $step = 'identify'; // identify | set_pin | interact
+    public string $authMode = 'login'; // login | register
+
+    // Formular-Felder
     public string $guestName  = '';
-    public string $guestEmail = '';
-    public bool $showNameForm = false;
-    public string $step       = 'identify'; // identify → interact
+    public string $guestPin   = '';
+    public string $guestPin2  = ''; // Bestätigung bei Registrierung
+    public string $authError  = '';
 
     // Voting
-    public array $selectedOptionIds = [];
+    public array $selectedOptionIds = []; // [option_id => vote_value]
 
-    // Film-Wunsch (custom)
-    public string $wishTitle    = '';
-    public string $wishYear     = '';
-    public bool $showWishForm   = false;
+    // Film-Wunsch
+    public string $wishTitle   = '';
+    public string $wishYear    = '';
+    public bool $showWishForm  = false;
 
     // Seat Request
     public array $requestedSeatIds = [];
@@ -53,83 +47,111 @@ class PublicEventPage extends Component
             'screenings.movie',
         ])->where('public_token', $token)->firstOrFail();
 
-        // 1. Magic Token aus URL
-        $magicToken = request('token');
-
-        // 2. Fallback: Token aus Session (nach Reload)
-        if (!$magicToken) {
-            $magicToken = session('le_guest_token_' . $this->event->public_token);
-        }
-
-        if ($magicToken) {
-            $this->guest = Guest::findByToken($magicToken);
-            if ($this->guest) {
-                $this->guestName  = $this->guest->name;
-                $this->guestEmail = $this->guest->email ?? '';
-                $this->step = 'interact';
-                $this->loadExistingVotes();
+        // Session-Token: nach Reload automatisch einloggen
+        $sessionToken = session('le_guest_token_' . $this->event->public_token);
+        if ($sessionToken) {
+            $guest = Guest::findByToken($sessionToken);
+            if ($guest) {
+                $this->loginGuest($guest);
+                return;
             }
         }
 
-        if (!$this->guest) {
-            $this->showNameForm = true;
+        // URL-Token (persönlicher Link)
+        $urlToken = request('token');
+        if ($urlToken) {
+            $guest = Guest::findByToken($urlToken);
+            if ($guest) {
+                $this->loginGuest($guest);
+                return;
+            }
         }
     }
 
-    public function identify(): void
+    private function loginGuest(Guest $guest): void
     {
+        $this->guest      = $guest;
+        $this->guestName  = $guest->name;
+        $this->step       = 'interact';
+        $this->loadExistingVotes();
+        session(['le_guest_token_' . $this->event->public_token => $guest->magic_token]);
+    }
+
+    // ── Registrierung ─────────────────────────────────────────────────────
+
+    public function register(): void
+    {
+        $this->authError = '';
         $this->validate([
-            'guestName'  => 'required|min:2|max:80',
-            'guestEmail' => 'nullable|email|max:120',
+            'guestName' => 'required|min:2|max:80',
+            'guestPin'  => 'required|min:4|max:8|numeric',
+            'guestPin2' => 'required|same:guestPin',
+        ], [
+            'guestPin2.same' => 'PINs stimmen nicht überein.',
+            'guestPin.numeric' => 'PIN darf nur Zahlen enthalten.',
+            'guestPin.min' => 'PIN muss mindestens 4 Stellen haben.',
         ]);
 
-        // Bestehenden Gast per E-Mail finden oder neu anlegen
-        if ($this->guestEmail) {
-            $this->guest = Guest::firstOrCreate(
-                ['email' => $this->guestEmail],
-                ['name'  => $this->guestName]
-            );
-            // Name aktualisieren falls geändert
-            $this->guest->update(['name' => $this->guestName]);
-        } else {
-            // Kein E-Mail = anonymer Gast (kein Loyalty)
-            $this->guest = Guest::create([
-                'name'        => $this->guestName,
-                'magic_token' => null, // kein persistenter Token
-            ]);
+        // Name bereits vergeben?
+        $existing = Guest::where('name', $this->guestName)->whereNotNull('pin_hash')->first();
+        if ($existing) {
+            $this->authError = 'Dieser Name ist bereits vergeben. Bitte logge dich ein oder wähle einen anderen Namen.';
+            $this->authMode = 'login';
+            return;
         }
 
-        $this->step = 'interact';
-        $this->showNameForm = false;
-        $this->loadExistingVotes();
+        $guest = Guest::create([
+            'name'     => $this->guestName,
+            'pin_hash' => Hash::make($this->guestPin),
+        ]);
 
-        // Persönlichen Link in Session speichern damit Browser-Reload funktioniert
-        if ($this->guest?->magic_token) {
-            session(['le_guest_token_' . $this->event->public_token => $this->guest->magic_token]);
-        }
-
-        $this->dispatch('show-personal-link',
-            url: $this->guest?->magic_token
-                ? url('/event/' . $this->event->public_token . '?token=' . $this->guest->magic_token)
-                : null
-        );
+        $this->loginGuest($guest);
     }
+
+    // ── Login ──────────────────────────────────────────────────────────────
+
+    public function login(): void
+    {
+        $this->authError = '';
+        $this->validate([
+            'guestName' => 'required|min:2',
+            'guestPin'  => 'required|min:4|numeric',
+        ]);
+
+        $guest = Guest::where('name', $this->guestName)->whereNotNull('pin_hash')->first();
+
+        if (!$guest || !Hash::check($this->guestPin, $guest->pin_hash)) {
+            $this->authError = 'Name oder PIN falsch.';
+            return;
+        }
+
+        $this->loginGuest($guest);
+    }
+
+    public function logout(): void
+    {
+        session()->forget('le_guest_token_' . $this->event->public_token);
+        $this->guest = null;
+        $this->step  = 'identify';
+        $this->selectedOptionIds = [];
+        $this->guestPin = '';
+    }
+
+    // ── Votes laden ────────────────────────────────────────────────────────
 
     private function loadExistingVotes(): void
     {
         if (!$this->guest) return;
-        // selectedOptionIds: option_id => vote_value (für Termin: 'yes'/'maybe'/'no', für Film: 'like')
-        $votes = PollVote::where('guest_id', $this->guest->id)
+        $this->selectedOptionIds = PollVote::where('guest_id', $this->guest->id)
             ->pluck('vote_value', 'option_id')
             ->toArray();
-        $this->selectedOptionIds = $votes;
     }
 
-    // ── Termin-Abstimmung ─────────────────────────────────────────────────
+    // ── Termin-Abstimmung ──────────────────────────────────────────────────
 
     public function voteDate(int $optionId, string $value): void
     {
-        $this->requireGuest();
+        if (!$this->guest) return;
         $poll = $this->event->activeDatePoll;
         if (!$poll) return;
 
@@ -139,35 +161,37 @@ class PublicEventPage extends Component
             'guest_id'  => $this->guest->id,
         ])->first();
 
-        // Nochmal gleichen Button tippen → Stimme entfernen
+        // Nochmal gleichen Button → Stimme entfernen
         if ($existing && $existing->vote_value === $value) {
             $existing->delete();
+            unset($this->selectedOptionIds[$optionId]);
         } else {
             PollVote::updateOrCreate(
                 ['poll_id' => $poll->id, 'option_id' => $optionId, 'guest_id' => $this->guest->id],
                 ['guest_name' => $this->guest->name, 'vote_value' => $value]
             );
+            $this->selectedOptionIds[$optionId] = $value;
         }
-        $this->loadExistingVotes();
+
+        // Event neu laden damit Zähler stimmen
+        $this->event->load('polls.options.votes');
     }
 
-    // ── Film-Voting ───────────────────────────────────────────────────────
+    // ── Film-Voting ────────────────────────────────────────────────────────
 
     public function toggleFilmLike(int $optionId): void
     {
-        $this->requireGuest();
+        if (!$this->guest) return;
         $poll = $this->event->activeFilmPoll;
         if (!$poll) return;
 
-        $existing = PollVote::where([
-            'poll_id'   => $poll->id,
-            'option_id' => $optionId,
-            'guest_id'  => $this->guest->id,
-        ])->first();
-
-        if ($existing) {
-            $existing->delete();
-            $this->selectedOptionIds = array_filter($this->selectedOptionIds, fn($id) => $id !== $optionId);
+        if (isset($this->selectedOptionIds[$optionId])) {
+            PollVote::where([
+                'poll_id'   => $poll->id,
+                'option_id' => $optionId,
+                'guest_id'  => $this->guest->id,
+            ])->delete();
+            unset($this->selectedOptionIds[$optionId]);
         } else {
             PollVote::create([
                 'poll_id'    => $poll->id,
@@ -176,13 +200,15 @@ class PublicEventPage extends Component
                 'guest_name' => $this->guest->name,
                 'vote_value' => 'like',
             ]);
-            $this->selectedOptionIds[] = $optionId;
+            $this->selectedOptionIds[$optionId] = 'like';
         }
+
+        $this->event->load('polls.options.votes');
     }
 
     public function submitFilmWish(): void
     {
-        $this->requireGuest();
+        if (!$this->guest) return;
         $this->validate(['wishTitle' => 'required|min:2|max:200']);
 
         $poll = $this->event->activeFilmPoll;
@@ -197,7 +223,6 @@ class PublicEventPage extends Component
             'suggested_by_guest_id' => $this->guest->id,
         ]);
 
-        // Direkt selbst liken
         PollVote::create([
             'poll_id'    => $poll->id,
             'option_id'  => $option->id,
@@ -206,18 +231,19 @@ class PublicEventPage extends Component
             'vote_value' => 'like',
         ]);
 
+        $this->selectedOptionIds[$option->id] = 'like';
         $this->wishTitle  = '';
         $this->wishYear   = '';
         $this->showWishForm = false;
-        $this->loadExistingVotes();
+        $this->event->load('polls.options.votes');
     }
 
-    // ── Sitzplatz-Anfrage ─────────────────────────────────────────────────
+    // ── Sitzplatz-Anfrage ──────────────────────────────────────────────────
 
     public function toggleSeatRequest(int $seatId): void
     {
         if (in_array($seatId, $this->requestedSeatIds)) {
-            $this->requestedSeatIds = array_filter($this->requestedSeatIds, fn($id) => $id !== $seatId);
+            $this->requestedSeatIds = array_values(array_filter($this->requestedSeatIds, fn($id) => $id !== $seatId));
         } else {
             $this->requestedSeatIds[] = $seatId;
         }
@@ -225,7 +251,7 @@ class PublicEventPage extends Component
 
     public function submitSeatRequest(): void
     {
-        $this->requireGuest();
+        if (!$this->guest) return;
 
         SeatRequest::updateOrCreate(
             ['event_id' => $this->event->id, 'guest_id' => $this->guest->id],
@@ -239,21 +265,6 @@ class PublicEventPage extends Component
         );
 
         $this->seatRequestSent = true;
-    }
-
-    private function requireGuest(): void
-    {
-        if (!$this->guest) {
-            $this->showNameForm = true;
-            $this->step = 'identify';
-        }
-    }
-
-    public function getSeatStatusForGuestAttribute(): ?string
-    {
-        if (!$this->guest) return null;
-        $request = $this->event->seatRequests->where('guest_id', $this->guest->id)->first();
-        return $request?->status;
     }
 
     public function render()
