@@ -101,7 +101,10 @@ class PublicEventPage extends Component
     private function loadExistingVotes(): void
     {
         if (!$this->guest) return;
-        $votes = PollVote::where('guest_id', $this->guest->id)->pluck('option_id')->toArray();
+        // selectedOptionIds: option_id => vote_value (für Termin: 'yes'/'maybe'/'no', für Film: 'like')
+        $votes = PollVote::where('guest_id', $this->guest->id)
+            ->pluck('vote_value', 'option_id')
+            ->toArray();
         $this->selectedOptionIds = $votes;
     }
 
@@ -113,10 +116,21 @@ class PublicEventPage extends Component
         $poll = $this->event->activeDatePoll;
         if (!$poll) return;
 
-        PollVote::updateOrCreate(
-            ['poll_id' => $poll->id, 'option_id' => $optionId, 'guest_id' => $this->guest->id],
-            ['guest_name' => $this->guest->name, 'vote_value' => $value]
-        );
+        $existing = PollVote::where([
+            'poll_id'   => $poll->id,
+            'option_id' => $optionId,
+            'guest_id'  => $this->guest->id,
+        ])->first();
+
+        // Nochmal gleichen Button tippen → Stimme entfernen
+        if ($existing && $existing->vote_value === $value) {
+            $existing->delete();
+        } else {
+            PollVote::updateOrCreate(
+                ['poll_id' => $poll->id, 'option_id' => $optionId, 'guest_id' => $this->guest->id],
+                ['guest_name' => $this->guest->name, 'vote_value' => $value]
+            );
+        }
         $this->loadExistingVotes();
     }
 

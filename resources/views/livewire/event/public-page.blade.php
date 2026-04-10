@@ -113,7 +113,7 @@
 
         <div style="display:flex; flex-direction:column; gap:.75rem;">
         @foreach ($filmPoll->options->sortByDesc(fn($o) => $o->votes->count()) as $option)
-        @php $liked = in_array($option->id, $selectedOptionIds); $likeCount = $option->votes->where('vote_value','like')->count(); @endphp
+        @php $liked = isset($selectedOptionIds[$option->id]); $likeCount = $option->votes->where('vote_value','like')->count(); @endphp
         <div style="background:var(--le-surface); border:1px solid {{ $liked?'var(--le-gold)':'var(--le-border)' }}; border-radius:12px; padding:1rem; display:flex; gap:1rem; align-items:center;">
             @if($option->poster_url)
                 <img src="{{ $option->poster_url }}" style="width:56px; height:80px; object-fit:cover; border-radius:6px; flex-shrink:0;" alt="">
