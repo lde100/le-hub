@@ -6,13 +6,13 @@
 
     {{-- Tab-Switch --}}
     <div style="display:flex; gap:0; margin-bottom:1.5rem; background:#0D0D0D; border-radius:10px; padding:3px;">
-        <button wire:click="$set('authMode','login')"
+        <button wire:click="$set('authMode','login'); $set('guestPin',''); $set('guestPin2',''); $set('authError','')"
             style="flex:1; padding:.625rem; border-radius:8px; border:none; cursor:pointer; font-size:.9rem; font-weight:600;
                 background:{{ $authMode==='login' ? '#C9A84C' : 'transparent' }};
                 color:{{ $authMode==='login' ? '#000' : '#666' }};">
             Einloggen
         </button>
-        <button wire:click="$set('authMode','register')"
+        <button wire:click="$set('authMode','register'); $set('guestPin',''); $set('guestPin2',''); $set('authError','')"
             style="flex:1; padding:.625rem; border-radius:8px; border:none; cursor:pointer; font-size:.9rem; font-weight:600;
                 background:{{ $authMode==='register' ? '#C9A84C' : 'transparent' }};
                 color:{{ $authMode==='register' ? '#000' : '#666' }};">
@@ -66,7 +66,7 @@
 
     <label style="font-size:.8rem; color:#888; display:block; margin-bottom:.375rem;">PIN wiederholen</label>
     <input wire:model="guestPin2" type="password" inputmode="numeric" placeholder="••••"
-        style="{{ $inp }}" autocomplete="new-password"
+        style="{{ $inp }}" autocomplete="off"
         wire:keydown.enter="register">
     @error('guestPin2') <div style="color:#EF4444; font-size:.8rem; margin-top:-.625rem; margin-bottom:.625rem;">{{ $message }}</div> @enderror
 
@@ -278,9 +278,16 @@
 {{-- ── BESTÄTIGTE VORSTELLUNG ──────────────────────────────────────────────── --}}
 @if (in_array($event->status, ['confirmed','finished']) && $event->confirmedScreening)
 <div style="background:#1a1a1a; border:1px solid #C9A84C44; border-radius:16px; padding:1.5rem; margin-bottom:1.5rem;">
-    <div style="font-size:.7rem; color:#C9A84C; text-transform:uppercase; letter-spacing:.1em; margin-bottom:.625rem;">Bestätigt</div>
+    <div style="font-size:.7rem; color:#C9A84C; text-transform:uppercase; letter-spacing:.1em; margin-bottom:.625rem;">
+        {{ $event->status === 'booking_open' ? 'Buchung offen' : 'Bestätigt' }}
+    </div>
+    @if($event->confirmedScreening)
     <div style="font-size:1.5rem; font-weight:800; margin-bottom:.25rem;">{{ $event->confirmedScreening->movie?->title ?? $event->title }}</div>
     <div style="color:#666; font-size:.9rem;">{{ $event->confirmedScreening->starts_at->isoFormat('dddd, D. MMMM YYYY · HH:mm') }} Uhr</div>
+    @else
+    <div style="font-size:1.5rem; font-weight:800; margin-bottom:.25rem;">{{ $event->title }}</div>
+    <div style="color:#666; font-size:.875rem;">Termin & Film werden noch bekanntgegeben.</div>
+    @endif
 </div>
 @endif
 
