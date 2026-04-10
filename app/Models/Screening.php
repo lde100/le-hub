@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Screening extends Model
 {
     protected $fillable = [
-        'venue_id', 'movie_id', 'starts_at', 'doors_open_at',
-        'base_price', 'status', 'notes'
+        'event_id', 'venue_id', 'movie_id', 'starts_at', 'doors_open_at',
+        'base_price', 'status', 'seating_mode', 'max_capacity', 'notes'
     ];
 
     protected $casts = [
